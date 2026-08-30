@@ -10,7 +10,7 @@ A recipe library for two. Paste a link, pull the photo, ingredients, servings, a
 - **Notes** — write what you changed from the original.
 - **Checklists** — tick ingredients and steps. When everything is checked, that counts as a cook.
 - **Kitchen hits** — recipes ranked by how many times you cooked them.
-- **What’s in** — type what is in the fridge and find the best saved match.
+- **Search the pantry** — type what is in the fridge and find the best saved match.
 
 The first sign-in seeds four sample recipes so you can try the shelves immediately.
 

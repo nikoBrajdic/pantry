@@ -12,12 +12,12 @@ import { fold } from "@/lib/ingredients";
 import { cn } from "@/lib/utils";
 import type { Difficulty, Pace } from "@/lib/types";
 
-type Shelf = "keepers" | "wishlist" | "hits";
+type Shelf = "all" | "keepers" | "wishlist" | "hits";
 
 export default function LibraryPage() {
   const { recipes, ready } = useRecipes();
   const [query, setQuery] = useState("");
-  const [shelf, setShelf] = useState<Shelf>("keepers");
+  const [shelf, setShelf] = useState<Shelf>("all");
   const [tag, setTag] = useState("");
   const [difficulty, setDifficulty] = useState<Difficulty | "">("");
   const [pace, setPace] = useState<Pace | "">("");
@@ -25,6 +25,7 @@ export default function LibraryPage() {
 
   const counts = useMemo(
     () => ({
+      all: recipes.length,
       keepers: recipes.filter((recipe) => recipe.list === "keeper").length,
       wishlist: recipes.filter((recipe) => recipe.list === "wishlist").length,
       hits: recipes.filter((recipe) => recipe.timesCooked > 0).length,
@@ -57,20 +58,27 @@ export default function LibraryPage() {
   }, [difficulty, nextDayOnly, pace, query, recipes, shelf, tag]);
 
   if (!ready) {
-    return <p className="text-muted-foreground">Opening your library…</p>;
+    return <p className="text-muted-foreground">Opening your shelf…</p>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-primary text-sm font-medium">Your library</p>
+          <p className="text-primary text-sm font-medium">On your shelf</p>
           <h1 className="font-heading text-4xl tracking-tight">
-            {shelf === "hits" ? "Kitchen hits" : shelf === "wishlist" ? "Wishlist" : "Keepers"}
+            {shelf === "all"
+              ? "All recipes"
+              : shelf === "hits"
+                ? "Kitchen hits"
+                : shelf === "wishlist"
+                  ? "Wishlist"
+                  : "Keepers"}
           </h1>
           <p className="text-muted-foreground mt-2 max-w-xl text-base">
-            Keepers are the ones you stand by. The wishlist is what you still want to
-            try. Kitchen hits are ranked by how many times you cooked them.
+            All recipes is everything on the shelf. Keepers are the ones you stand
+            by, the wishlist is what you still want to try, and Kitchen hits are
+            ranked by how many times you cooked them.
           </p>
         </div>
         <Button render={<Link href="/add" />} className="h-11 rounded-full px-4 text-sm">
@@ -82,6 +90,7 @@ export default function LibraryPage() {
       <div className="flex flex-wrap gap-2">
         {(
           [
+            ["all", "All recipes", counts.all],
             ["keepers", "Keepers", counts.keepers],
             ["wishlist", "Wishlist", counts.wishlist],
             ["hits", "Kitchen hits", counts.hits],
@@ -165,7 +174,9 @@ export default function LibraryPage() {
           <p className="text-muted-foreground mx-auto mt-2 max-w-md">
             {shelf === "hits"
               ? "Cook a recipe all the way through — check every ingredient and step — and it lands here."
-              : "Add a recipe from a link, or move one from the other list."}
+              : shelf === "all"
+                ? "Add a recipe from a link to get the shelf started."
+                : "Add a recipe from a link, or move one from another list."}
           </p>
           <Button render={<Link href="/add" />} className="mt-5 h-11 rounded-full px-4 text-sm">
             Add a recipe

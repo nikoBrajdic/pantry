@@ -23,8 +23,8 @@ export default function KitchenPage() {
   return (
     <div className="space-y-6">
       <div className="max-w-2xl">
-        <p className="text-primary text-sm font-medium">Fridge and cupboard</p>
-        <h1 className="font-heading text-4xl tracking-tight">What do I have?</h1>
+        <p className="text-primary text-sm font-medium">On your shelf</p>
+        <h1 className="font-heading text-4xl tracking-tight">Search the pantry</h1>
         <p className="text-muted-foreground mt-2 text-base">
           Type what is in the house — chicken, eggs, flour, tomatoes… The app ranks
           saved recipes by how well they fit.
@@ -49,7 +49,7 @@ export default function KitchenPage() {
           className="min-h-28 rounded-xl text-base"
         />
         <Button type="submit" className="h-11 rounded-full px-4 text-sm">
-          Find recipes
+          Search the pantry
         </Button>
       </form>
 

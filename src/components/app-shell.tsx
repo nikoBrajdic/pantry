@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 const LINKS = [
   { href: "/", label: "Library", icon: HouseIcon },
   { href: "/add", label: "Add", icon: PlusCircleIcon },
-  { href: "/kitchen", label: "What's in", icon: MagnifyingGlassIcon },
+  { href: "/kitchen", label: "Search the pantry", icon: MagnifyingGlassIcon },
   { href: "/share", label: "Share", icon: UsersThreeIcon },
 ];
 
@@ -104,7 +104,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "flex flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[11px]",
+                  "flex flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-center text-[10px] leading-tight",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >
