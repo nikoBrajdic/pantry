@@ -28,7 +28,6 @@ fs.writeFileSync(path.join(appDir, "icon.svg"), markSvg(64, 14).toString());
 
 for (const [size, file, dir] of [
   [32, "favicon-32.png", publicIcons],
-  [16, "favicon-16.png", publicIcons],
   [180, "apple-touch-icon.png", publicIcons],
   [192, "icon-192.png", publicIcons],
   [512, "icon-512.png", publicIcons],

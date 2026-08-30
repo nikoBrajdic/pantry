@@ -183,15 +183,12 @@ export const hr: Record<MessageKey, string> = {
   "cook.ingredients": "Sastojci",
   "cook.ingredientsHint": "Označi svaki dok kuhaš.",
   "cook.method": "Postupak",
-  "cook.methodHint": "Označi korake kako ih završavaš.",
   "cook.noSteps": "Još nema spremljenih koraka.",
-  "cook.progress": "Napredak kuhanja",
   "cook.done": "Skuhano. To je bilo kuhanje #{count}.",
   "cook.doneHint":
     "Sada se pojavljuje u kuhinjskim hitovima. Resetiraj popise kad kuhaš opet.",
   "cook.again": "Kuhaj opet",
   "cook.hint": "Označi svaki sastojak i svaki korak da zabilježiš kuhanje.",
-  "cook.reset": "Resetiraj popis",
 
   "scaler.servingsQuestion": "Koliko porcija?",
   "scaler.servings": "porcija",
@@ -231,7 +228,6 @@ export const hr: Record<MessageKey, string> = {
   "form.wishlistHint": "Želim probati kasnije.",
   "form.difficulty": "Težina",
   "form.pace": "Tempo",
-  "form.time": "Vrijeme",
   "form.tags": "Oznake",
   "form.tagsHint": "Dodirni sve što odgovara — ili dodaj svoju ako ništa ne paše.",
   "form.nutritionFromSource": "Makronutrijenti s izvora",
@@ -240,7 +236,6 @@ export const hr: Record<MessageKey, string> = {
   "form.nextDay": "Najbolje sljedeći dan",
   "form.nextDayHint":
     "Označi ako treba dugo hlađenje, odmor ili se ne jede isti dan.",
-  "form.nextDayNote": "Zašto / što planirati",
   "form.nextDayPlaceholder": "npr. Mora stajati u frižideru preko noći.",
   "form.ingredients": "Sastojci",
   "form.ingredientsHint":

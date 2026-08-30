@@ -1,48 +1,4 @@
-import { SAMPLE_RECIPES } from "./samples";
 import type { Recipe } from "./types";
-
-export const RECIPES_KEY = "pantry:recipes";
-export const HOUSEHOLD_KEY = "pantry:household";
-export const SEEDED_KEY = "pantry:seeded";
-
-function canUseStorage() {
-  return typeof window !== "undefined" && typeof localStorage !== "undefined";
-}
-
-export function loadRecipes(): Recipe[] {
-  if (!canUseStorage()) return [];
-  const raw = localStorage.getItem(RECIPES_KEY);
-  if (!raw) {
-    if (!localStorage.getItem(SEEDED_KEY)) {
-      localStorage.setItem(RECIPES_KEY, JSON.stringify(SAMPLE_RECIPES));
-      localStorage.setItem(SEEDED_KEY, "1");
-      return SAMPLE_RECIPES;
-    }
-    return [];
-  }
-  try {
-    const parsed = JSON.parse(raw) as Recipe[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-export function saveRecipes(recipes: Recipe[]) {
-  if (!canUseStorage()) return;
-  localStorage.setItem(RECIPES_KEY, JSON.stringify(recipes));
-}
-
-export function loadHouseholdCode() {
-  if (!canUseStorage()) return "";
-  return localStorage.getItem(HOUSEHOLD_KEY) ?? "";
-}
-
-export function saveHouseholdCode(code: string) {
-  if (!canUseStorage()) return;
-  if (code) localStorage.setItem(HOUSEHOLD_KEY, code);
-  else localStorage.removeItem(HOUSEHOLD_KEY);
-}
 
 export function mergeRecipes(local: Recipe[], incoming: Recipe[]) {
   const byId = new Map<string, Recipe>();

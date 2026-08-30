@@ -178,14 +178,11 @@ export const en = {
   "cook.ingredients": "Ingredients",
   "cook.ingredientsHint": "Check each one off as you go.",
   "cook.method": "Method",
-  "cook.methodHint": "Tick the steps as you finish them.",
   "cook.noSteps": "No steps saved yet.",
-  "cook.progress": "Cooking progress",
   "cook.done": "Cooked. That was time #{count}.",
   "cook.doneHint": "It now shows up in Kitchen hits. Reset the lists when you make it again.",
   "cook.again": "Cook again",
   "cook.hint": "Check every ingredient and every step to log a cook.",
-  "cook.reset": "Reset checklist",
 
   "scaler.servingsQuestion": "How many servings?",
   "scaler.servings": "servings",
@@ -226,7 +223,6 @@ export const en = {
   "form.wishlistHint": "Want to try this later.",
   "form.difficulty": "Difficulty",
   "form.pace": "Pace",
-  "form.time": "Time",
   "form.tags": "Tags",
   "form.tagsHint": "Tap everything that fits — or add your own if none apply.",
   "form.nutritionFromSource": "Macronutrients from the source",
@@ -235,7 +231,6 @@ export const en = {
   "form.nextDay": "Best the next day",
   "form.nextDayHint":
     "Mark this if it needs a long chill, a rest, or should not be eaten the same day.",
-  "form.nextDayNote": "Why / what to plan for",
   "form.nextDayPlaceholder": "e.g. Must sit in the fridge overnight.",
   "form.ingredients": "Ingredients",
   "form.ingredientsHint":

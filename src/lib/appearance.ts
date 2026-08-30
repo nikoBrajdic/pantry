@@ -88,7 +88,7 @@ export const PALETTES: { id: PaletteId; label: string; swatch: string }[] = [
   { id: "peach", label: "Peach", swatch: "oklch(0.86 0.06 50)" },
   { id: "orange", label: "Orange", swatch: "oklch(0.62 0.14 55)" },
   { id: "butter", label: "Butter", swatch: "oklch(0.9 0.07 95)" },
-  { id: "yellow", label: "Lemon", swatch: "oklch(0.72 0.12 95)" },
+  { id: "yellow", label: "Mustard", swatch: "oklch(0.72 0.12 95)" },
   { id: "red", label: "Tomato", swatch: "oklch(0.48 0.14 25)" },
   { id: "mist", label: "Mochi", swatch: "oklch(0.88 0.02 240)" },
 ];
