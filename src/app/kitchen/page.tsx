@@ -18,7 +18,7 @@ export default function KitchenPage() {
     [recipes, submitted],
   );
 
-  if (!ready) return <p className="text-muted-foreground">Loading your library…</p>;
+  if (!ready) return <p className="text-muted-foreground">Opening your shelf…</p>;
 
   return (
     <div className="space-y-6">

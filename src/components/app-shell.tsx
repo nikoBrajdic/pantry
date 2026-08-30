@@ -15,10 +15,15 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const LINKS = [
-  { href: "/", label: "Library", icon: HouseIcon },
-  { href: "/add", label: "Add", icon: PlusCircleIcon },
-  { href: "/kitchen", label: "Search the pantry", icon: MagnifyingGlassIcon },
-  { href: "/share", label: "Share", icon: UsersThreeIcon },
+  { href: "/", label: "Library", short: "Library", icon: HouseIcon },
+  { href: "/add", label: "Add", short: "Add", icon: PlusCircleIcon },
+  {
+    href: "/kitchen",
+    label: "Search the pantry",
+    short: "Pantry",
+    icon: MagnifyingGlassIcon,
+  },
+  { href: "/share", label: "Share", short: "Share", icon: UsersThreeIcon },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -109,7 +114,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 )}
               >
                 <Icon weight={active ? "fill" : "regular"} className="size-5" />
-                {link.label}
+                {link.short}
               </Link>
             );
           })}
