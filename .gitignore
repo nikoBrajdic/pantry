@@ -43,3 +43,6 @@ next-env.d.ts
 # shared household and user data (created at runtime)
 /data/households/*.json
 /data/users/*.json
+
+# local agent scratch
+/agent-tools/
