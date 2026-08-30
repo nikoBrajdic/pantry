@@ -28,9 +28,15 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
-      const url = optionalPublicUrl(body.url);
-      const recipe = extractRecipeFromHtml(pastedHtml, url);
-      return Response.json({ recipe });
+      try {
+        const url = optionalPublicUrl(body.url);
+        const recipe = extractRecipeFromHtml(pastedHtml, url);
+        return Response.json({ recipe });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "The recipe could not be extracted.";
+        return Response.json({ error: message, reason: "extract" }, { status: 400 });
+      }
     }
 
     const url = assertPublicHttpUrl(body.url ?? "");
@@ -56,8 +62,12 @@ export async function POST(request: Request) {
     }
 
     const html = await response.text();
-    const recipe = extractRecipeFromHtml(html, url);
-    return Response.json({ recipe });
+    try {
+      const recipe = extractRecipeFromHtml(html, url);
+      return Response.json({ recipe });
+    } catch {
+      return Response.json({ error: "extract_failed", reason: "extract" }, { status: 422 });
+    }
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "The recipe could not be extracted.";

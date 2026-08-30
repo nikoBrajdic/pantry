@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LinkSimpleIcon, NotePencilIcon } from "@phosphor-icons/react";
 import { useLocale } from "@/components/locale-provider";
@@ -8,11 +8,21 @@ import { RecipeForm } from "@/components/recipe-form";
 import { useRecipes } from "@/components/recipe-provider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { draftFromExtracted, emptyDraft, recipeFromDraft, type RecipeDraft } from "@/lib/draft";
 import type { ExtractedRecipe } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+type HtmlHelpKind = "fetch" | "extract";
 
 export default function AddRecipePage() {
   const { t } = useLocale();
@@ -25,11 +35,31 @@ export default function AddRecipePage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [htmlHelpOpen, setHtmlHelpOpen] = useState(false);
+  const [htmlHelpKind, setHtmlHelpKind] = useState<HtmlHelpKind>("fetch");
   const [targetKitchen, setTargetKitchen] = useState(household);
+  const htmlPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setTargetKitchen(household);
   }, [household]);
+
+  useEffect(() => {
+    if (!showHtml) return;
+    htmlPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [showHtml]);
+
+  function openHtmlPaste() {
+    setHtmlHelpOpen(false);
+    setShowHtml(true);
+    setError("");
+  }
+
+  function openHtmlHelp(kind: HtmlHelpKind) {
+    setHtmlHelpKind(kind);
+    setHtmlHelpOpen(true);
+    setError("");
+  }
 
   async function extract() {
     setError("");
@@ -51,11 +81,22 @@ export default function AddRecipePage() {
       };
       if (!response.ok || !data.recipe) {
         if (!usedPaste && (data.reason === "fetch" || data.error === "fetch_failed")) {
-          throw new Error(t("add.error.fetchFailed"));
+          openHtmlHelp("fetch");
+          return;
+        }
+        if (!usedPaste && (data.reason === "extract" || data.error === "extract_failed")) {
+          openHtmlHelp("extract");
+          return;
+        }
+        // URL pull failed for another reason — still offer HTML paste
+        if (!usedPaste) {
+          openHtmlHelp("extract");
+          return;
         }
         throw new Error(data.error ?? t("add.error.extract"));
       }
       setDraft(draftFromExtracted(data.recipe));
+      setShowHtml(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("add.error.generic"));
     } finally {
@@ -86,6 +127,10 @@ export default function AddRecipePage() {
 
   const canPull = Boolean(url.trim() || html.trim());
   const showKitchenPicker = kitchens.length > 0;
+  const helpTitle =
+    htmlHelpKind === "fetch" ? t("add.htmlHelp.fetchTitle") : t("add.htmlHelp.extractTitle");
+  const helpBody =
+    htmlHelpKind === "fetch" ? t("add.htmlHelp.fetchBody") : t("add.htmlHelp.extractBody");
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -119,12 +164,18 @@ export default function AddRecipePage() {
             className="h-11 rounded-xl px-4 text-sm"
           >
             <LinkSimpleIcon />
-            {loading ? t("add.reading") : t("add.pull")}
+            {loading
+              ? showHtml
+                ? t("add.readingHtml")
+                : t("add.reading")
+              : showHtml
+                ? t("add.pullFromHtml")
+                : t("add.pull")}
           </Button>
         </div>
 
         {showHtml ? (
-          <div className="mt-4 space-y-3">
+          <div ref={htmlPanelRef} className="mt-4 space-y-3 scroll-mt-24">
             <div className="space-y-2 rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm">
               <p className="font-medium">{t("add.htmlHowTitle")}</p>
               <div>
@@ -156,7 +207,7 @@ export default function AddRecipePage() {
               value={html}
               onChange={(event) => setHtml(event.target.value)}
               placeholder={t("add.htmlPlaceholder")}
-              className="min-h-40 rounded-xl font-mono text-xs"
+              className="field-sizing-fixed h-40 min-h-40 max-h-40 resize-none overflow-y-auto rounded-xl font-mono text-xs"
             />
           </div>
         ) : null}
@@ -255,6 +306,24 @@ export default function AddRecipePage() {
           </div>
         </div>
       ) : null}
+
+      <Dialog open={htmlHelpOpen} onOpenChange={setHtmlHelpOpen}>
+        <DialogContent className="rounded-3xl sm:max-w-md" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="font-heading text-xl tracking-tight">
+              {helpTitle}
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-relaxed">
+              {helpBody}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-stretch">
+            <Button className="h-11 w-full rounded-full" onClick={openHtmlPaste}>
+              {t("add.pasteHtml")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
