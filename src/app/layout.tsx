@@ -17,7 +17,7 @@ const sans = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: "Receptoteka",
+  title: "Pantry",
   description:
     "Paste a recipe link, pull ingredients and steps, scale servings, and share the kitchen with someone you cook with.",
 };

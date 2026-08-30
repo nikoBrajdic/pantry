@@ -1,46 +1,40 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { CookingPotIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm({
-  googleReady,
+  supabaseReady,
   callbackUrl,
+  initialError = "",
 }: {
-  googleReady: boolean;
+  supabaseReady: boolean;
   callbackUrl: string;
+  initialError?: string;
 }) {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initialError);
 
   async function continueGoogle() {
     setBusy(true);
     setError("");
-    if (googleReady) {
-      await signIn("google", { callbackUrl });
-      return;
-    }
-    const result = await signIn("google-preview", {
-      email,
-      name,
-      callbackUrl,
-      redirect: false,
-    });
-    if (result?.error) {
-      setError("Use a real-looking email, like you@gmail.com.");
+    try {
+      const supabase = createClient();
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackUrl)}`;
+      const { error: signInError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      });
+      if (signInError) {
+        setError(signInError.message);
+        setBusy(false);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not start Google sign-in.");
       setBusy(false);
-      return;
     }
-    router.replace(callbackUrl);
-    router.refresh();
   }
 
   return (
@@ -50,14 +44,14 @@ export function LoginForm({
           <span className="bg-primary text-primary-foreground mx-auto grid size-12 place-items-center rounded-2xl">
             <CookingPotIcon weight="fill" className="size-6" />
           </span>
-          <h1 className="font-heading text-4xl tracking-tight">Receptoteka</h1>
+          <h1 className="font-heading text-4xl tracking-tight">Pantry</h1>
           <p className="text-muted-foreground">
             Sign in with Google so your library stays with you — and your partner can
             share the same kitchen.
           </p>
         </div>
 
-        {googleReady ? (
+        {supabaseReady ? (
           <Button
             className="h-12 w-full rounded-full text-sm"
             disabled={busy}
@@ -66,44 +60,11 @@ export function LoginForm({
             Continue with Google
           </Button>
         ) : (
-          <form
-            className="space-y-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void continueGoogle();
-            }}
-          >
-            <p className="text-muted-foreground rounded-2xl bg-secondary/70 px-3 py-2 text-sm">
-              Real Google login needs <code>AUTH_GOOGLE_ID</code> and{" "}
-              <code>AUTH_GOOGLE_SECRET</code> from Google Cloud. Until those are set,
-              continue with the Google email you use at home.
-            </p>
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Google email</Label>
-              <Input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="you@gmail.com"
-                className="h-11 rounded-xl text-base"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Your name"
-                className="h-11 rounded-xl text-base"
-              />
-            </div>
-            <Button type="submit" className="h-12 w-full rounded-full text-sm" disabled={busy}>
-              Continue with Google
-            </Button>
-          </form>
+          <p className="text-muted-foreground rounded-2xl bg-secondary/70 px-3 py-2 text-sm">
+            Add <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
+            <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> to <code>.env.local</code>, then
+            enable Google under Authentication → Providers in your Supabase project.
+          </p>
         )}
         {error ? <p className="text-destructive text-center text-sm">{error}</p> : null}
       </div>

@@ -1,4 +1,4 @@
-# Receptoteka
+# Pantry
 
 A recipe library for two. Paste a link, pull the photo, ingredients, servings, and method, then scale amounts, tick off a cook, and keep the ones that earned a place.
 
@@ -16,35 +16,44 @@ The first sign-in seeds four sample recipes so you can try the shelves immediate
 
 ## Run it
 
-You need [Node.js](https://nodejs.org/) 20 or newer.
+You need [Node.js](https://nodejs.org/) 20 or newer and a [Supabase](https://supabase.com/) project.
 
 ```bash
 cp .env.example .env.local
-# add AUTH_SECRET (any long random string)
 npm install
 npm run dev
 ```
 
 Open [http://127.0.0.1:43147](http://127.0.0.1:43147).
 
-## Google login
+### 1. Create the Supabase project
 
-Create an OAuth client in [Google Cloud Console](https://console.cloud.google.com/apis/credentials). Add these authorized redirect URIs:
-
-- `http://127.0.0.1:43147/api/auth/callback/google`
-- `https://YOUR_DOMAIN/api/auth/callback/google`
-
-Then set:
+1. Go to [supabase.com/dashboard](https://supabase.com/dashboard) → **New project**.
+2. Copy **Project URL** and **anon public** key into `.env.local`:
 
 ```
-AUTH_SECRET=
-AUTH_URL=http://127.0.0.1:43147
-AUTH_GOOGLE_ID=
-AUTH_GOOGLE_SECRET=
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-Until those keys are set, the sign-in page asks for the Google email you use at home so you can still open the app.
+3. In the Supabase SQL editor, run the migration file:
+
+`supabase/migrations/20260330120000_init.sql`
+
+### 2. Google login (via Supabase Auth)
+
+1. In Supabase: **Authentication → Providers → Google** — enable it.
+2. Create (or reuse) an OAuth client in [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+3. Set the Google authorized redirect URI to:
+
+`https://YOUR_PROJECT.supabase.co/auth/v1/callback`
+
+4. Paste the Google Client ID and Client Secret into the Supabase Google provider settings.
+5. In Supabase **Authentication → URL configuration**:
+
+- Site URL: `http://127.0.0.1:43147`
+- Redirect URLs: `http://127.0.0.1:43147/auth/callback` (and your production URL later)
 
 ## Deploy
 
-This is a Next.js app and can go on Vercel. Add the same environment variables there. Recipe files live on the server disk in this project; on Vercel that storage is not permanent, so a later database would be the next step for a long-lived shared kitchen.
+This is a Next.js app and can go on Vercel. Add the same Supabase env vars there, and add your production URL to Supabase redirect allow-lists and Google OAuth if needed.

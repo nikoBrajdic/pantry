@@ -1,8 +1,6 @@
-import { mkdir, readFile, writeFile } from "fs/promises";
-import path from "path";
 import type { HouseholdPayload, Recipe } from "./types";
-
-const DATA_DIR = path.join(process.cwd(), "data", "households");
+import { normalizeRecipe } from "./normalize";
+import { createClient } from "./supabase/server";
 
 function normalizeCode(code: string) {
   return code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -17,19 +15,24 @@ export function makeHouseholdCode() {
   return code;
 }
 
-function fileFor(code: string) {
-  return path.join(DATA_DIR, `${normalizeCode(code)}.json`);
-}
-
 export async function readHousehold(code: string): Promise<HouseholdPayload | null> {
   const clean = normalizeCode(code);
   if (clean.length < 4) return null;
-  try {
-    const raw = await readFile(fileFor(clean), "utf8");
-    return JSON.parse(raw) as HouseholdPayload;
-  } catch {
-    return null;
-  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("households")
+    .select("code, recipes, updated_at")
+    .eq("code", clean)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  return {
+    code: data.code,
+    recipes: ((data.recipes ?? []) as Recipe[]).map(normalizeRecipe),
+    updatedAt: data.updated_at,
+  };
 }
 
 export async function writeHousehold(code: string, recipes: Recipe[]) {
@@ -37,12 +40,45 @@ export async function writeHousehold(code: string, recipes: Recipe[]) {
   if (clean.length < 4) {
     throw new Error("That kitchen code is too short.");
   }
-  await mkdir(DATA_DIR, { recursive: true });
-  const payload: HouseholdPayload = {
+
+  const supabase = await createClient();
+  const payload = {
     code: clean,
-    recipes,
-    updatedAt: new Date().toISOString(),
+    recipes: recipes.map(normalizeRecipe),
+    updated_at: new Date().toISOString(),
   };
-  await writeFile(fileFor(clean), JSON.stringify(payload, null, 2), "utf8");
-  return payload;
+
+  const { data: existing } = await supabase
+    .from("households")
+    .select("code")
+    .eq("code", clean)
+    .maybeSingle();
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from("households")
+      .update({ recipes: payload.recipes, updated_at: payload.updated_at })
+      .eq("code", clean)
+      .select("code, recipes, updated_at")
+      .single();
+    if (error) throw new Error(error.message);
+    return {
+      code: data.code,
+      recipes: (data.recipes as Recipe[]).map(normalizeRecipe),
+      updatedAt: data.updated_at,
+    } satisfies HouseholdPayload;
+  }
+
+  const { data, error } = await supabase
+    .from("households")
+    .insert(payload)
+    .select("code, recipes, updated_at")
+    .single();
+  if (error) throw new Error(error.message);
+
+  return {
+    code: data.code,
+    recipes: (data.recipes as Recipe[]).map(normalizeRecipe),
+    updatedAt: data.updated_at,
+  } satisfies HouseholdPayload;
 }

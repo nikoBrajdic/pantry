@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/components/session-provider";
 import { mergeRecipes } from "@/lib/storage";
 import { normalizeRecipe } from "@/lib/normalize";
 import type { Recipe, RecipeList } from "@/lib/types";
@@ -34,7 +34,7 @@ type RecipeContextValue = {
 const RecipeContext = createContext<RecipeContextValue | null>(null);
 
 export function RecipeProvider({ children }: { children: React.ReactNode }) {
-  const { status } = useSession();
+  const { status } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [household, setHousehold] = useState("");
   const [ready, setReady] = useState(false);

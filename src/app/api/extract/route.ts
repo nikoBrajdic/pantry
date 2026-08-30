@@ -1,11 +1,11 @@
-import { auth } from "@/auth";
 import { assertPublicHttpUrl, extractRecipeFromHtml } from "@/lib/extract";
+import { getSessionUser } from "@/lib/session-user";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.email) {
+  const user = await getSessionUser();
+  if (!user?.email) {
     return Response.json({ error: "Sign in first." }, { status: 401 });
   }
 

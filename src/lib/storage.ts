@@ -1,9 +1,9 @@
 import { SAMPLE_RECIPES } from "./samples";
 import type { Recipe } from "./types";
 
-export const RECIPES_KEY = "receptoteka:recipes";
-export const HOUSEHOLD_KEY = "receptoteka:household";
-export const SEEDED_KEY = "receptoteka:seeded";
+export const RECIPES_KEY = "pantry:recipes";
+export const HOUSEHOLD_KEY = "pantry:household";
+export const SEEDED_KEY = "pantry:seeded";
 
 function canUseStorage() {
   return typeof window !== "undefined" && typeof localStorage !== "undefined";

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
 import {
   CookingPotIcon,
   HouseIcon,
@@ -13,6 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/session-provider";
 
 const LINKS = [
   { href: "/", label: "Library", short: "Library", icon: HouseIcon },
@@ -28,7 +28,10 @@ const LINKS = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { data } = useSession();
+  const { user, signOut } = useAuth();
+  const avatar = user?.user_metadata?.avatar_url as string | undefined;
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined) ?? user?.email ?? "";
 
   if (pathname === "/login") {
     return <>{children}</>;
@@ -43,7 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <CookingPotIcon weight="fill" className="size-5" />
             </span>
             <span className="leading-tight">
-              <span className="font-heading block text-lg tracking-tight">Receptoteka</span>
+              <span className="font-heading block text-lg tracking-tight">Pantry</span>
               <span className="text-muted-foreground hidden text-xs sm:block">
                 Paste a link. Keep the recipe. Cook it again.
               </span>
@@ -71,22 +74,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
           <div className="flex items-center gap-2">
-            {data?.user?.image ? (
+            {avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={data.user.image}
-                alt=""
-                className="size-8 rounded-full object-cover"
-              />
+              <img src={avatar} alt="" className="size-8 rounded-full object-cover" />
             ) : null}
             <span className="text-muted-foreground hidden max-w-36 truncate text-xs lg:block">
-              {data?.user?.name ?? data?.user?.email}
+              {displayName}
             </span>
             <Button
               variant="ghost"
               size="sm"
               className="rounded-full"
-              onClick={() => void signOut({ callbackUrl: "/login" })}
+              onClick={() => void signOut()}
             >
               <SignOutIcon />
               Sign out
