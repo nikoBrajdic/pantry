@@ -1,0 +1,99 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { RecipeCard } from "@/components/recipe-card";
+import { useRecipes } from "@/components/recipe-provider";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { matchRecipes, parsePantry } from "@/lib/match";
+
+export default function KitchenPage() {
+  const { recipes, ready } = useRecipes();
+  const [pantry, setPantry] = useState("");
+  const [submitted, setSubmitted] = useState("");
+
+  const matches = useMemo(
+    () => matchRecipes(recipes, parsePantry(submitted)),
+    [recipes, submitted],
+  );
+
+  if (!ready) return <p className="text-muted-foreground">Učitavam knjižnicu…</p>;
+
+  return (
+    <div className="space-y-6">
+      <div className="max-w-2xl">
+        <p className="text-primary text-sm font-medium">Frižider i ormar</p>
+        <h1 className="font-heading text-4xl tracking-tight">Što imam u kući?</h1>
+        <p className="text-muted-foreground mt-2 text-base">
+          Upiši što imaš — piletina, jaja, brašno, rajčica… Aplikacija pregleda
+          spremljene recepte i pokaže koji najbolje odgovaraju.
+        </p>
+      </div>
+
+      <form
+        className="max-w-2xl space-y-3 rounded-3xl border border-border bg-card p-4 sm:p-5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setSubmitted(pantry);
+        }}
+      >
+        <label htmlFor="pantry" className="text-sm font-medium">
+          Sastojci koje imaš
+        </label>
+        <Textarea
+          id="pantry"
+          value={pantry}
+          onChange={(event) => setPantry(event.target.value)}
+          placeholder="piletina, paprika, jaja, brašno, mlijeko"
+          className="min-h-28 rounded-xl text-base"
+        />
+        <Button type="submit" className="h-11 rounded-full px-4 text-sm">
+          Nađi recepte
+        </Button>
+      </form>
+
+      {!submitted ? (
+        <p className="text-muted-foreground max-w-xl text-sm">
+          Primjer: <em>piletina, paprika, luk, jaja, brašno</em>
+        </p>
+      ) : matches.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-border bg-card/70 px-6 py-12 text-center">
+          <h2 className="font-heading text-2xl">Nijedan spremljeni recept ne sjeda</h2>
+          <p className="text-muted-foreground mx-auto mt-2 max-w-md">
+            Dodaj još recepata ili proširi popis. Traži se samo po onome što je već
+            u knjižnici.
+          </p>
+          <Button render={<Link href="/dodaj" />} className="mt-4 rounded-full">
+            Dodaj recept
+          </Button>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {matches.map((match) => (
+            <RecipeCard
+              key={match.recipe.id}
+              recipe={match.recipe}
+              extra={
+                <div className="space-y-1 text-sm">
+                  <p className="font-medium text-primary">
+                    {Math.round(match.score * 100)}% poklapanje · imaš {match.matched.length} od{" "}
+                    {match.recipe.ingredients.length}
+                  </p>
+                  {match.missing.length > 0 ? (
+                    <p className="text-muted-foreground">
+                      Nedostaje: {match.missing.slice(0, 4).join(", ")}
+                      {match.missing.length > 4 ? "…" : ""}
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground">Imaš sve sastojke.</p>
+                  )}
+                </div>
+              }
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
