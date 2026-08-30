@@ -81,15 +81,33 @@ export const hr: Record<MessageKey, string> = {
   "add.eyebrow": "Novi recept",
   "add.title": "Zalijepi link",
   "add.blurb":
-    "Aplikacija povuče fotografiju, sastojke, porcije i postupak. Ako stranica to ne dijeli, dodaj recept ručno.",
+    "Povuci s linka kad stranica to dopušta. Ako aplikaciju blokira, zalijepi HTML stranice — ili dodaj recept ručno.",
   "add.linkLabel": "Link recepta",
   "add.pull": "Povuci recept",
   "add.reading": "Čitam stranicu…",
+  "add.pasteHtml": "Zalijepi HTML stranice",
+  "add.hideHtml": "Sakrij HTML",
+  "add.htmlLabel": "HTML stranice",
+  "add.htmlHowTitle": "Kako kopirati HTML stranice",
+  "add.htmlDesktopTitle": "Računalo",
+  "add.htmlDesktop.1": "Otvori recept u pregledniku.",
+  "add.htmlDesktop.2":
+    "Desni klik na stranicu → View Page Source (Chrome/Edge) ili Show Page Source (Safari). Ili Ctrl+U / Cmd+Option+U.",
+  "add.htmlDesktop.3":
+    "Označi sve, kopiraj i zalijepi u okvir ispod. Link gore ostavi ispunjen ako ga imaš.",
+  "add.htmlMobileTitle": "Telefon",
+  "add.htmlMobile.1": "Otvori recept u pregledniku i ostavi link ispunjen gore.",
+  "add.htmlMobile.2":
+    "Android Chrome: u adresnoj traci upiši view-source: ispred URL-a, odaberi opciju s 🌐 simbolom, NE 🔍 simbolom, označi sve i kopiraj.",
+  "add.htmlMobile.3":
+    "iPhone: Safari teško kopira cijeli HTML. Otvori stranicu na računalu i zalijepi odande, ili koristi prečac/bookmarklet za View Source.",
+  "add.htmlPlaceholder": "<!DOCTYPE html>…",
   "add.byHand": "Dodaj ručno",
   "add.pullErrorTitle": "Nije uspjelo povući recept",
-  "add.pullErrorHint": "Ispravi link ili nastavi ručno.",
   "add.save": "Spremi u knjižnicu",
   "add.cancel": "Odustani",
+  "add.error.fetchFailed":
+    "Recept se ne može dohvatiti. Pokušaj zalijepiti cijeli HTML",
   "add.error.extract": "Recept se nije mogao izvući.",
   "add.error.generic": "Nešto je pošlo po krivu.",
   "add.error.ingredient": "Dodaj barem jedan sastojak.",
