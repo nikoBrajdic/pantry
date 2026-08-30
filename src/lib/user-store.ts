@@ -9,6 +9,7 @@ import {
   renameHousehold,
   writeHousehold,
 } from "./household-store";
+import { mergeRecipes, newId } from "./storage";
 import { createClient } from "./supabase/server";
 
 export function userKey(email: string) {
@@ -187,6 +188,55 @@ export async function saveUserRecipes(
     recipes,
     updatedAt: new Date().toISOString(),
   });
+}
+
+/** Copy a recipe from the active kitchen into another kitchen without switching. */
+export async function copyRecipeToKitchen(recipeId: string, targetCode: string) {
+  const { supabase, user } = await requireAuthUser();
+  const profile = await ensureProfile(supabase, { id: user.id, email: user.email! });
+  const current = await toLibrary(
+    user.email!,
+    profile,
+    await listKitchens(user.id),
+  );
+
+  const source = current.recipes.find((item) => item.id === recipeId);
+  if (!source) throw new Error("That recipe is not in this kitchen.");
+
+  const target = targetCode.trim().toUpperCase();
+  if ((current.householdCode || "") === target) {
+    throw new Error("That recipe is already in this kitchen.");
+  }
+
+  const now = new Date().toISOString();
+  const copy = normalizeRecipe({
+    ...source,
+    id: newId(),
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  if (!target) {
+    const personal = ((profile.recipes ?? []) as Recipe[]).map(normalizeRecipe);
+    const recipes = mergeRecipes(personal, [copy]);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ recipes, updated_at: now })
+      .eq("id", user.id);
+    if (error) throw new Error(error.message);
+    return { recipe: copy, targetCode: "" };
+  }
+
+  const kitchens = await listKitchens(user.id);
+  if (!kitchens.some((item) => item.code === target)) {
+    throw new Error("You are not in that kitchen.");
+  }
+
+  const household = await readHousehold(target);
+  if (!household) throw new Error("That kitchen was not found.");
+
+  await writeHousehold(target, mergeRecipes(household.recipes, [copy]));
+  return { recipe: copy, targetCode: target };
 }
 
 export async function switchHousehold(code: string) {

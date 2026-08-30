@@ -38,6 +38,7 @@ type RecipeContextValue = {
   switchHousehold: (code: string) => Promise<void>;
   leaveHousehold: (code?: string) => Promise<void>;
   renameKitchen: (code: string, name: string) => Promise<void>;
+  copyRecipeToKitchen: (recipeId: string, targetHouseholdCode: string) => Promise<void>;
   refreshHousehold: () => Promise<void>;
 };
 
@@ -279,6 +280,22 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     [applyLibrary],
   );
 
+  const copyRecipeToKitchen = useCallback(async (recipeId: string, targetCode: string) => {
+    const response = await fetch("/api/recipes/copy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        recipeId,
+        targetHouseholdCode: targetCode,
+      }),
+    });
+    const data = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      throw new Error(data.error ?? "Could not copy that recipe.");
+    }
+    setSyncState("ok");
+  }, []);
+
   const refreshHousehold = useCallback(async () => {
     const code = householdRef.current;
     if (!code) return;
@@ -310,6 +327,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       switchHousehold,
       leaveHousehold,
       renameKitchen,
+      copyRecipeToKitchen,
       refreshHousehold,
     }),
     [
@@ -328,6 +346,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       switchHousehold,
       leaveHousehold,
       renameKitchen,
+      copyRecipeToKitchen,
       refreshHousehold,
     ],
   );

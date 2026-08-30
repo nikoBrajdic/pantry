@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeftIcon,
   ClockIcon,
+  CookingPotIcon,
   FireIcon,
   LinkSimpleIcon,
   NotePencilIcon,
@@ -45,6 +46,7 @@ import {
   tagMessageKey,
 } from "@/lib/i18n";
 import { shareUrlFor } from "@/lib/share";
+import { cn } from "@/lib/utils";
 
 export default function RecipePage({
   params,
@@ -115,6 +117,7 @@ function RecipeBody({
   onSaveNote: (notes: string) => void;
 }) {
   const { t } = useLocale();
+  const { household, kitchens, copyRecipeToKitchen } = useRecipes();
   const scale = useRecipeScale(recipe);
   const cook = useCookChecklist(recipe, onCooked);
   const difficulty = DIFFICULTY_OPTIONS.find((item) => item.id === recipe.difficulty);
@@ -123,12 +126,40 @@ function RecipeBody({
   const paceKey = pace ? paceMessageKey(pace.id) : null;
   const notesValue = noteDraft ?? recipe.notes ?? "";
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [kitchenOpen, setKitchenOpen] = useState(false);
+  const [kitchenBusy, setKitchenBusy] = useState(false);
+  const [kitchenMessage, setKitchenMessage] = useState("");
   const [cooking, setCooking] = useState(false);
+
+  const kitchenTargets = [
+    ...(household
+      ? [{ code: "", name: t("recipe.personalKitchen") }]
+      : []),
+    ...kitchens
+      .filter((item) => item.code !== household)
+      .map((item) => ({ code: item.code, name: item.name })),
+  ];
 
   async function copyShare() {
     const url = await shareUrlFor(recipe, window.location.origin);
     await navigator.clipboard.writeText(url);
     setCopied(true);
+  }
+
+  async function addToKitchen(targetCode: string, targetName: string) {
+    setKitchenBusy(true);
+    setKitchenMessage("");
+    try {
+      await copyRecipeToKitchen(recipe.id, targetCode);
+      setKitchenMessage(t("recipe.addedToKitchen", { name: targetName }));
+      setKitchenOpen(false);
+    } catch (error) {
+      setKitchenMessage(
+        error instanceof Error ? error.message : t("recipe.addToKitchenError"),
+      );
+    } finally {
+      setKitchenBusy(false);
+    }
   }
 
   return (
@@ -234,6 +265,19 @@ function RecipeBody({
                     ? t("recipe.moveToWishlist")
                     : t("recipe.moveToKeepers")}
                 </Button>
+                {kitchenTargets.length > 0 ? (
+                  <Button
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={() => {
+                      setKitchenMessage("");
+                      setKitchenOpen(true);
+                    }}
+                  >
+                    <CookingPotIcon />
+                    {t("recipe.addToKitchen")}
+                  </Button>
+                ) : null}
                 <Button
                   variant="outline"
                   className="rounded-full"
@@ -252,6 +296,9 @@ function RecipeBody({
                 </Button>
               </div>
               {copied ? <p className="text-sm text-primary">{t("recipe.copied")}</p> : null}
+              {kitchenMessage ? (
+                <p className="text-sm text-primary">{kitchenMessage}</p>
+              ) : null}
             </div>
           </div>
 
@@ -303,6 +350,45 @@ function RecipeBody({
           </div>
         </div>
       </div>
+
+      <Dialog open={kitchenOpen} onOpenChange={setKitchenOpen}>
+        <DialogContent className="rounded-3xl sm:max-w-md" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="font-heading text-xl tracking-tight">
+              {t("recipe.addToKitchenTitle")}
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              {t("recipe.addToKitchenBlurb")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {kitchenTargets.map((item) => (
+              <button
+                key={item.code || "personal"}
+                type="button"
+                disabled={kitchenBusy}
+                onClick={() => void addToKitchen(item.code, item.name)}
+                className={cn(
+                  "flex w-full items-center rounded-2xl border border-border px-4 py-3 text-left text-sm font-medium",
+                  "hover:border-primary/40 hover:bg-primary/5 disabled:opacity-60",
+                )}
+              >
+                {item.name}
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="rounded-full"
+              disabled={kitchenBusy}
+              onClick={() => setKitchenOpen(false)}
+            >
+              {t("recipe.cancel")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent className="rounded-3xl sm:max-w-md" showCloseButton={false}>

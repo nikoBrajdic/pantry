@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LinkSimpleIcon, NotePencilIcon } from "@phosphor-icons/react";
 import { useLocale } from "@/components/locale-provider";
@@ -12,17 +12,24 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { draftFromExtracted, emptyDraft, recipeFromDraft, type RecipeDraft } from "@/lib/draft";
 import type { ExtractedRecipe } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export default function AddRecipePage() {
   const { t } = useLocale();
   const router = useRouter();
-  const { upsertRecipe } = useRecipes();
+  const { upsertRecipe, household, kitchens, switchHousehold } = useRecipes();
   const [url, setUrl] = useState("");
   const [html, setHtml] = useState("");
   const [showHtml, setShowHtml] = useState(false);
   const [draft, setDraft] = useState<RecipeDraft | null>(null);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [targetKitchen, setTargetKitchen] = useState(household);
+
+  useEffect(() => {
+    setTargetKitchen(household);
+  }, [household]);
 
   async function extract() {
     setError("");
@@ -56,18 +63,29 @@ export default function AddRecipePage() {
     }
   }
 
-  function save() {
+  async function save() {
     if (!draft) return;
     const recipe = recipeFromDraft(draft);
     if (recipe.ingredients.length === 0) {
       setError(t("add.error.ingredient"));
       return;
     }
-    upsertRecipe(recipe);
-    router.push(`/recipe/${recipe.id}`);
+    setError("");
+    setSaving(true);
+    try {
+      if (targetKitchen !== household) {
+        await switchHousehold(targetKitchen);
+      }
+      upsertRecipe({ ...recipe, updatedAt: new Date().toISOString() });
+      router.push(`/recipe/${recipe.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("add.error.generic"));
+      setSaving(false);
+    }
   }
 
   const canPull = Boolean(url.trim() || html.trim());
+  const showKitchenPicker = kitchens.length > 0;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -182,13 +200,54 @@ export default function AddRecipePage() {
       {draft ? (
         <div className="space-y-5">
           <RecipeForm draft={draft} onChange={setDraft} />
+
+          {showKitchenPicker ? (
+            <section className="space-y-3 rounded-3xl border border-border bg-card p-5">
+              <p className="text-sm font-medium">{t("add.saveTo")}</p>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setTargetKitchen("")}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left",
+                    targetKitchen === ""
+                      ? "border-primary bg-primary/8"
+                      : "border-border hover:border-primary/40",
+                  )}
+                >
+                  <span className="text-sm font-medium">{t("add.personal")}</span>
+                </button>
+                {kitchens.map((item) => (
+                  <button
+                    key={item.code}
+                    type="button"
+                    onClick={() => setTargetKitchen(item.code)}
+                    className={cn(
+                      "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left",
+                      targetKitchen === item.code
+                        ? "border-primary bg-primary/8"
+                        : "border-border hover:border-primary/40",
+                    )}
+                  >
+                    <span className="text-sm font-medium">{item.name}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           <div className="flex flex-wrap gap-2">
-            <Button onClick={save} className="h-11 rounded-full px-5 text-sm">
-              {t("add.save")}
+            <Button
+              onClick={() => void save()}
+              disabled={saving}
+              className="h-11 rounded-full px-5 text-sm"
+            >
+              {saving ? t("add.saving") : t("add.save")}
             </Button>
             <Button
               variant="outline"
               className="h-11 rounded-full px-5 text-sm"
+              disabled={saving}
               onClick={() => setDraft(null)}
             >
               {t("add.cancel")}
