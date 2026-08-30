@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useLocale } from "@/components/locale-provider";
 import { RecipeCard } from "@/components/recipe-card";
 import { useRecipes } from "@/components/recipe-provider";
 import { ShelfLoading } from "@/components/shelf-loading";
@@ -10,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { matchRecipes, parsePantry } from "@/lib/match";
 
 export default function KitchenPage() {
+  const { t } = useLocale();
   const { recipes, ready } = useRecipes();
   const [pantry, setPantry] = useState("");
   const [submitted, setSubmitted] = useState("");
@@ -24,12 +26,9 @@ export default function KitchenPage() {
   return (
     <div className="space-y-6">
       <div className="max-w-2xl">
-        <p className="text-primary text-sm font-medium">On your shelf</p>
-        <h1 className="font-heading text-4xl tracking-tight">Search the pantry</h1>
-        <p className="text-muted-foreground mt-2 text-base">
-          Type what is in the house — chicken, eggs, flour, tomatoes… The app ranks
-          saved recipes by how well they fit.
-        </p>
+        <p className="text-primary text-sm font-medium">{t("kitchen.eyebrow")}</p>
+        <h1 className="font-heading text-4xl tracking-tight">{t("kitchen.title")}</h1>
+        <p className="text-muted-foreground mt-2 text-base">{t("kitchen.blurb")}</p>
       </div>
 
       <form
@@ -40,33 +39,30 @@ export default function KitchenPage() {
         }}
       >
         <label htmlFor="pantry" className="text-sm font-medium">
-          Ingredients you have
+          {t("kitchen.label")}
         </label>
         <Textarea
           id="pantry"
           value={pantry}
           onChange={(event) => setPantry(event.target.value)}
-          placeholder="chicken, peppers, eggs, flour, milk"
+          placeholder={t("kitchen.placeholder")}
           className="min-h-28 rounded-xl text-base"
         />
         <Button type="submit" className="h-11 rounded-full px-4 text-sm">
-          Search the pantry
+          {t("kitchen.search")}
         </Button>
       </form>
 
       {!submitted ? (
-        <p className="text-muted-foreground max-w-xl text-sm">
-          Example: <em>chicken, peppers, onion, eggs, flour</em>
-        </p>
+        <p className="text-muted-foreground max-w-xl text-sm">{t("kitchen.example")}</p>
       ) : matches.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-border bg-card/70 px-6 py-12 text-center">
-          <h2 className="font-heading text-2xl">No saved recipe quite fits</h2>
+          <h2 className="font-heading text-2xl">{t("kitchen.empty.title")}</h2>
           <p className="text-muted-foreground mx-auto mt-2 max-w-md">
-            Add more recipes or widen the list. This only searches what is already
-            in your library.
+            {t("kitchen.empty.blurb")}
           </p>
           <Button render={<Link href="/add" />} className="mt-4 rounded-full">
-            Add a recipe
+            {t("library.add")}
           </Button>
         </div>
       ) : (
@@ -78,16 +74,22 @@ export default function KitchenPage() {
               extra={
                 <div className="space-y-1 text-sm">
                   <p className="font-medium text-primary">
-                    {Math.round(match.score * 100)}% match · you have {match.matched.length} of{" "}
-                    {match.recipe.ingredients.length}
+                    {t("kitchen.match", {
+                      pct: Math.round(match.score * 100),
+                      have: match.matched.length,
+                      total: match.recipe.ingredients.length,
+                    })}
                   </p>
                   {match.missing.length > 0 ? (
                     <p className="text-muted-foreground">
-                      Missing: {match.missing.slice(0, 4).join(", ")}
-                      {match.missing.length > 4 ? "…" : ""}
+                      {t("kitchen.missing", {
+                        list:
+                          match.missing.slice(0, 4).join(", ") +
+                          (match.missing.length > 4 ? "…" : ""),
+                      })}
                     </p>
                   ) : (
-                    <p className="text-muted-foreground">You have everything.</p>
+                    <p className="text-muted-foreground">{t("kitchen.haveAll")}</p>
                   )}
                 </div>
               }

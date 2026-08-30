@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { PlusIcon, XIcon } from "@phosphor-icons/react";
+import { useLocale } from "@/components/locale-provider";
 import { RECIPE_TAGS, tagLabel } from "@/lib/tags";
+import { tagMessageKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +24,7 @@ export function TagPicker({
   value: string[];
   onChange: (next: string[]) => void;
 }) {
+  const { t } = useLocale();
   const [adding, setAdding] = useState(false);
   const [custom, setCustom] = useState("");
 
@@ -41,6 +44,7 @@ export function TagPicker({
       <div className="flex flex-wrap gap-2">
         {RECIPE_TAGS.map((tag) => {
           const selected = value.includes(tag.id);
+          const key = tagMessageKey(tag.id);
           return (
             <button
               key={tag.id}
@@ -57,7 +61,7 @@ export function TagPicker({
                   : "border-border bg-card text-foreground hover:border-primary/40",
               )}
             >
-              {tag.label}
+              {key ? t(key) : tag.label}
             </button>
           );
         })}
@@ -79,7 +83,7 @@ export function TagPicker({
           <Input
             value={custom}
             onChange={(event) => setCustom(event.target.value)}
-            placeholder="e.g. meal-prep"
+            placeholder={t("tags.placeholder")}
             className="h-10 rounded-xl text-base"
             onKeyDown={(event) => {
               if (event.key === "Enter") {
@@ -90,7 +94,7 @@ export function TagPicker({
           />
           <div className="flex gap-2">
             <Button type="button" className="rounded-full" onClick={addCustom}>
-              Add tag
+              {t("tags.save")}
             </Button>
             <Button
               type="button"
@@ -101,7 +105,7 @@ export function TagPicker({
                 setCustom("");
               }}
             >
-              Cancel
+              {t("tags.cancel")}
             </Button>
           </div>
         </div>
@@ -113,7 +117,7 @@ export function TagPicker({
           onClick={() => setAdding(true)}
         >
           <PlusIcon />
-          Add a tag
+          {t("tags.add")}
         </Button>
       )}
     </div>

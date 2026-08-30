@@ -3,6 +3,7 @@
 import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLocale } from "@/components/locale-provider";
 import { RecipeForm } from "@/components/recipe-form";
 import { useRecipes } from "@/components/recipe-provider";
 import { ShelfLoading } from "@/components/shelf-loading";
@@ -14,6 +15,7 @@ export default function EditRecipePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { t } = useLocale();
   const { id } = use(params);
   const router = useRouter();
   const { recipes, ready, upsertRecipe } = useRecipes();
@@ -22,13 +24,13 @@ export default function EditRecipePage({
   const draft =
     recipe && edited?.id === recipe.id ? edited : recipe ? draftFromRecipe(recipe) : null;
 
-  if (!ready) return <ShelfLoading label="Loading recipe" />;
+  if (!ready) return <ShelfLoading label={t("loading.recipe")} />;
   if (!recipe || !draft) {
     return (
       <div>
-        <p>Recipe not found.</p>
+        <p>{t("edit.notFound")}</p>
         <Button render={<Link href="/" />} className="mt-3 rounded-full">
-          Back
+          {t("edit.back")}
         </Button>
       </div>
     );
@@ -37,11 +39,8 @@ export default function EditRecipePage({
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="font-heading text-4xl tracking-tight">Edit recipe</h1>
-        <p className="text-muted-foreground mt-2">
-          Change amounts, the photo, tags, or the note about what you did differently.
-          If you share a kitchen, your sous chefs see the update too.
-        </p>
+        <h1 className="font-heading text-4xl tracking-tight">{t("edit.title")}</h1>
+        <p className="text-muted-foreground mt-2">{t("edit.blurb")}</p>
       </div>
       <RecipeForm draft={draft} onChange={setEdited} />
       <div className="flex flex-wrap gap-2">
@@ -52,14 +51,14 @@ export default function EditRecipePage({
             router.push(`/recipe/${recipe.id}`);
           }}
         >
-          Save changes
+          {t("edit.save")}
         </Button>
         <Button
           variant="outline"
           className="h-11 rounded-full px-5 text-sm"
           render={<Link href={`/recipe/${recipe.id}`} />}
         >
-          Cancel
+          {t("edit.cancel")}
         </Button>
       </div>
     </div>

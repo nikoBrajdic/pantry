@@ -1,4 +1,8 @@
+"use client";
+
+import { useLocale } from "@/components/locale-provider";
 import { formatAmount } from "@/lib/ingredients";
+import type { MessageKey } from "@/lib/i18n";
 import { scaleNutrition } from "@/lib/normalize";
 import type { Nutrition } from "@/lib/types";
 
@@ -13,33 +17,40 @@ export function NutritionPanel({
   baseServings: number;
   shownServings: number;
 }) {
+  const { t } = useLocale();
   const scaled = scaleNutrition(nutrition, factor);
   if (!scaled) return null;
 
-  const rows: { label: string; value?: number; unit: string }[] = [
-    { label: "Calories", value: scaled.calories, unit: "kcal" },
-    { label: "Protein", value: scaled.proteinG, unit: "g" },
-    { label: "Fat", value: scaled.fatG, unit: "g" },
-    { label: "Carbs", value: scaled.carbsG, unit: "g" },
-    { label: "Fiber", value: scaled.fiberG, unit: "g" },
-    { label: "Sugar", value: scaled.sugarG, unit: "g" },
-    { label: "Sodium", value: scaled.sodiumMg, unit: "mg" },
-  ].filter((row) => row.value != null);
+  const allRows: { key: MessageKey; value?: number; unit: string }[] = [
+    { key: "nutrition.calories", value: scaled.calories, unit: "kcal" },
+    { key: "nutrition.protein", value: scaled.proteinG, unit: "g" },
+    { key: "nutrition.fat", value: scaled.fatG, unit: "g" },
+    { key: "nutrition.carbs", value: scaled.carbsG, unit: "g" },
+    { key: "nutrition.fiber", value: scaled.fiberG, unit: "g" },
+    { key: "nutrition.sugar", value: scaled.sugarG, unit: "g" },
+    { key: "nutrition.sodium", value: scaled.sodiumMg, unit: "mg" },
+  ];
+  const rows = allRows.filter(
+    (row): row is { key: MessageKey; value: number; unit: string } => row.value != null,
+  );
 
   if (rows.length === 0) return null;
 
   return (
     <section className="rounded-3xl border border-border bg-card p-4 sm:p-5">
-      <p className="text-sm font-medium">Macronutrients</p>
+      <p className="text-sm font-medium">{t("nutrition.title")}</p>
       <p className="text-muted-foreground mt-1 text-sm">
-        For {formatAmount(shownServings)} servings (recipe written for {baseServings}).
+        {t("nutrition.blurb", {
+          shown: formatAmount(shownServings),
+          base: baseServings,
+        })}
       </p>
       <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {rows.map((row) => (
-          <div key={row.label} className="rounded-2xl border border-border/80 px-3 py-2.5">
-            <dt className="text-muted-foreground text-xs">{row.label}</dt>
+          <div key={row.key} className="rounded-2xl border border-border/80 px-3 py-2.5">
+            <dt className="text-muted-foreground text-xs">{t(row.key)}</dt>
             <dd className="font-numeric text-xl tracking-tight">
-              {formatAmount(row.value!)}
+              {formatAmount(row.value)}
               <span className="text-muted-foreground ml-1 text-xs font-sans">{row.unit}</span>
             </dd>
           </div>

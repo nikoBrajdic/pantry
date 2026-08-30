@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CheckCircleIcon, FireIcon } from "@phosphor-icons/react";
+import { useLocale } from "@/components/locale-provider";
 import { formatIngredient } from "@/lib/ingredients";
 import type { Recipe } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -66,12 +67,12 @@ export function IngredientsChecklist({
   factor: number;
   cook: CookChecklistState;
 }) {
+  const { t } = useLocale();
+
   return (
     <section>
-      <h2 className="font-heading text-2xl">Ingredients</h2>
-      <p className="text-muted-foreground mt-1 text-sm">
-        Check each one off as you go.
-      </p>
+      <h2 className="font-heading text-2xl">{t("cook.ingredients")}</h2>
+      <p className="text-muted-foreground mt-1 text-sm">{t("cook.ingredientsHint")}</p>
       <ul className="mt-3 divide-y divide-border rounded-3xl border border-border bg-card">
         {recipe.ingredients.map((ingredient, index) => (
           <li key={`${ingredient.raw}-${index}`}>
@@ -107,11 +108,13 @@ export function MethodChecklist({
   recipe: Recipe;
   cook: CookChecklistState;
 }) {
+  const { t } = useLocale();
+
   return (
     <section className="rounded-3xl border border-border bg-card p-5 sm:p-6">
-      <h2 className="font-heading text-2xl">Method</h2>
+      <h2 className="font-heading text-2xl">{t("cook.method")}</h2>
       {recipe.instructions.length === 0 ? (
-        <p className="text-muted-foreground mt-3">No steps saved yet.</p>
+        <p className="text-muted-foreground mt-3">{t("cook.noSteps")}</p>
       ) : (
         <ol className="mt-4 space-y-3">
           {recipe.instructions.map((step, index) => (
@@ -148,27 +151,23 @@ export function MethodChecklist({
 }
 
 export function CookProgress({ cook }: { cook: CookChecklistState }) {
+  const { t } = useLocale();
+
   if (cook.logged != null) {
     return (
       <div className="rounded-3xl border border-primary/30 bg-primary/8 p-4">
         <p className="flex items-center gap-2 text-sm font-medium">
           <CheckCircleIcon className="size-4 text-primary" />
-          Cooked. That was time #{cook.logged}.
+          {t("cook.done", { count: cook.logged })}
         </p>
-        <p className="text-muted-foreground mt-1 text-sm">
-          It now shows up in Kitchen hits. Reset the lists when you make it again.
-        </p>
+        <p className="text-muted-foreground mt-1 text-sm">{t("cook.doneHint")}</p>
         <Button variant="outline" className="mt-3 rounded-full" onClick={cook.reset}>
           <FireIcon />
-          Cook again
+          {t("cook.again")}
         </Button>
       </div>
     );
   }
 
-  return (
-    <p className="text-muted-foreground text-sm">
-      Check every ingredient and every step to log a cook.
-    </p>
-  );
+  return <p className="text-muted-foreground text-sm">{t("cook.hint")}</p>;
 }

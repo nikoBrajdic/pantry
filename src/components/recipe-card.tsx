@@ -1,6 +1,14 @@
+"use client";
+
 import Link from "next/link";
 import { ClockIcon, FireIcon, WarningIcon } from "@phosphor-icons/react";
-import { DIFFICULTY_OPTIONS, PACE_OPTIONS, tagLabel } from "@/lib/tags";
+import { useLocale } from "@/components/locale-provider";
+import { DIFFICULTY_OPTIONS, PACE_OPTIONS } from "@/lib/tags";
+import {
+  difficultyMessageKey,
+  paceMessageKey,
+  tagMessageKey,
+} from "@/lib/i18n";
 import type { Recipe } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,8 +20,11 @@ export function RecipeCard({
   recipe: Recipe;
   extra?: React.ReactNode;
 }) {
+  const { t } = useLocale();
   const difficulty = DIFFICULTY_OPTIONS.find((item) => item.id === recipe.difficulty);
   const pace = PACE_OPTIONS.find((item) => item.id === recipe.pace);
+  const difficultyKey = difficulty ? difficultyMessageKey(difficulty.id) : null;
+  const paceKey = pace ? paceMessageKey(pace.id) : null;
 
   return (
     <Link href={`/recipe/${recipe.id}`} className="block h-full">
@@ -30,8 +41,8 @@ export function RecipeCard({
             </div>
           )}
           <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-            <span className="rounded-full bg-white/90 px-2 py-1 text-[11px] text-foreground">
-              {recipe.list === "keeper" ? "Keeper" : "Wishlist"}
+            <span className="rounded-full bg-card/90 px-2 py-1 text-[11px] text-foreground ring-1 ring-border/60">
+              {recipe.list === "keeper" ? t("card.keeper") : t("card.wishlist")}
             </span>
             {recipe.timesCooked > 0 ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-1 text-[11px] text-primary-foreground">
@@ -41,9 +52,9 @@ export function RecipeCard({
             ) : null}
           </div>
           {recipe.nextDay ? (
-            <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-[#f3e0b5] px-2 py-1 text-[11px] text-[#6b4a12]">
+            <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-1 text-[11px] text-secondary-foreground ring-1 ring-border/50">
               <WarningIcon className="size-3.5" />
-              Next day
+              {t("card.nextDay")}
             </span>
           ) : null}
         </div>
@@ -51,23 +62,28 @@ export function RecipeCard({
           <div>
             <h2 className="font-heading text-xl leading-tight">{recipe.title}</h2>
             <p className="text-muted-foreground mt-1 text-sm">
-              {recipe.servings} {recipe.servings === 1 ? "serving" : "servings"}
-              {recipe.sourceUrl ? " · from a link" : " · added by hand"}
+              {recipe.servings}{" "}
+              {recipe.servings === 1 ? t("card.serving") : t("card.servings")}
+              {" · "}
+              {recipe.sourceUrl ? t("card.fromLink") : t("card.byHand")}
             </p>
           </div>
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="secondary" className="rounded-full">
-              {difficulty?.label}
+              {difficultyKey ? t(difficultyKey) : difficulty?.label}
             </Badge>
             <Badge variant="outline" className="rounded-full">
               <ClockIcon className="size-3" />
-              {pace?.label}
+              {paceKey ? t(paceKey) : pace?.label}
             </Badge>
-            {recipe.tags.slice(0, 3).map((tag) => (
-              <Badge key={tag} variant="outline" className="rounded-full">
-                {tagLabel(tag)}
-              </Badge>
-            ))}
+            {recipe.tags.slice(0, 3).map((tag) => {
+              const key = tagMessageKey(tag);
+              return (
+                <Badge key={tag} variant="outline" className="rounded-full">
+                  {key ? t(key) : tag}
+                </Badge>
+              );
+            })}
           </div>
           {extra}
         </CardContent>

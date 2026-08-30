@@ -2,6 +2,7 @@
 
 import { PaletteIcon } from "@phosphor-icons/react";
 import { useAppearance } from "@/components/appearance-provider";
+import { useLocale } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,11 +13,22 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { APPEARANCE_MODES, PALETTES, PROFILE_ICONS } from "@/lib/appearance";
+import type { MessageKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+
+const MODE_KEYS: Record<
+  (typeof APPEARANCE_MODES)[number]["id"],
+  { label: MessageKey; hint: MessageKey }
+> = {
+  light: { label: "theme.mode.light", hint: "theme.mode.lightHint" },
+  dark: { label: "theme.mode.dark", hint: "theme.mode.darkHint" },
+  system: { label: "theme.mode.system", hint: "theme.mode.systemHint" },
+};
 
 export function AppearanceSettings() {
   const { mode, palette, profileIcon, setMode, setPalette, setProfileIcon } =
     useAppearance();
+  const { t } = useLocale();
 
   return (
     <Dialog>
@@ -24,27 +36,25 @@ export function AppearanceSettings() {
         render={
           <Button
             variant="ghost"
-            size="sm"
-            className="rounded-full"
-            aria-label="Theme settings"
+            className="size-11 rounded-full sm:h-9 sm:w-auto sm:gap-1.5 sm:px-3"
+            aria-label={t("theme.trigger")}
           />
         }
       >
-        <PaletteIcon className="size-4" />
-        <span className="hidden sm:inline">Theme</span>
+        <PaletteIcon className="size-6 sm:size-4" />
+        <span className="hidden sm:inline">{t("theme.trigger")}</span>
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto rounded-3xl sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="font-heading text-xl tracking-tight">Appearance</DialogTitle>
-          <DialogDescription>
-            Choose light, dark, or follow your system setting, then pick a colour palette and
-            profile icon.
-          </DialogDescription>
+          <DialogTitle className="font-heading text-xl tracking-tight">
+            {t("theme.title")}
+          </DialogTitle>
+          <DialogDescription>{t("theme.description")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
           <section className="space-y-2">
-            <p className="text-sm font-medium">Colour theme</p>
+            <p className="text-sm font-medium">{t("theme.colourTheme")}</p>
             <div className="grid grid-cols-3 gap-2">
               {APPEARANCE_MODES.map((item) => (
                 <button
@@ -58,15 +68,19 @@ export function AppearanceSettings() {
                       : "border-border hover:border-primary/40",
                   )}
                 >
-                  <span className="block text-sm font-medium">{item.label}</span>
-                  <span className="text-muted-foreground text-xs">{item.hint}</span>
+                  <span className="block text-sm font-medium">
+                    {t(MODE_KEYS[item.id].label)}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {t(MODE_KEYS[item.id].hint)}
+                  </span>
                 </button>
               ))}
             </div>
           </section>
 
           <section className="space-y-2">
-            <p className="text-sm font-medium">Palette</p>
+            <p className="text-sm font-medium">{t("theme.palette")}</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {PALETTES.map((item) => (
                 <button
@@ -81,7 +95,7 @@ export function AppearanceSettings() {
                   )}
                 >
                   <span
-                    className="size-4 shrink-0 rounded-full border border-black/10"
+                    className="size-4 shrink-0 rounded-full border border-border"
                     style={{ background: item.swatch }}
                     aria-hidden
                   />
@@ -89,22 +103,19 @@ export function AppearanceSettings() {
                 </button>
               ))}
             </div>
-            <p className="text-muted-foreground text-xs">
-              Sage is the default. Mint, sky, lilac, blush, peach, butter, mist, and lavender are
-              softer pastels.
-            </p>
+            <p className="text-muted-foreground text-xs">{t("theme.paletteHint")}</p>
           </section>
 
           <section className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium">Profile icon</p>
+              <p className="text-sm font-medium">{t("theme.profileIcon")}</p>
               {profileIcon ? (
                 <button
                   type="button"
                   onClick={() => setProfileIcon(null)}
                   className="text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline"
                 >
-                  Use account photo
+                  {t("theme.useAccountPhoto")}
                 </button>
               ) : null}
             </div>
@@ -117,7 +128,7 @@ export function AppearanceSettings() {
                   aria-label={item.label}
                   title={item.label}
                   className={cn(
-                    "aspect-square min-h-16 overflow-hidden rounded-2xl border bg-white p-2 transition-colors sm:min-h-20",
+                    "aspect-square min-h-20 overflow-hidden rounded-2xl border bg-card p-2 transition-colors sm:min-h-20",
                     profileIcon === item.id
                       ? "border-primary ring-primary/30 ring-2"
                       : "border-border hover:border-primary/40",
@@ -132,9 +143,7 @@ export function AppearanceSettings() {
                 </button>
               ))}
             </div>
-            <p className="text-muted-foreground text-xs">
-              Pick a chef character for the header. Clear to fall back to your account photo.
-            </p>
+            <p className="text-muted-foreground text-xs">{t("theme.profileHint")}</p>
           </section>
         </div>
       </DialogContent>

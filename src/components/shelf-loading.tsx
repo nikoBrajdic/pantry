@@ -1,4 +1,9 @@
-export function ShelfLoading({ label = "Opening your shelf" }: { label?: string }) {
+"use client";
+
+import { useLocale } from "@/components/locale-provider";
+
+export function ShelfLoading({ label }: { label?: string }) {
+  const { t } = useLocale();
   const books = [
     { x: 46, y: 38, w: 14, h: 48 },
     { x: 66, y: 28, w: 12, h: 58 },
@@ -13,7 +18,9 @@ export function ShelfLoading({ label = "Opening your shelf" }: { label?: string 
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
-      <p className="font-heading text-center text-3xl tracking-tight sm:text-4xl">{label}</p>
+      <p className="font-heading text-center text-3xl tracking-tight sm:text-4xl">
+        {label ?? t("loading.shelf")}
+      </p>
       <svg
         className="mt-10 text-foreground"
         width="280"
@@ -40,6 +47,7 @@ export function ShelfLoading({ label = "Opening your shelf" }: { label?: string 
                     y1={book.y + 8}
                     x2={spineX}
                     y2={book.y + book.h - 8}
+                    opacity="0.35"
                   />
                 </g>
               );

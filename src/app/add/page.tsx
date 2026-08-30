@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LinkSimpleIcon, NotePencilIcon } from "@phosphor-icons/react";
+import { useLocale } from "@/components/locale-provider";
 import { RecipeForm } from "@/components/recipe-form";
 import { useRecipes } from "@/components/recipe-provider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -12,6 +13,7 @@ import { draftFromExtracted, emptyDraft, recipeFromDraft, type RecipeDraft } fro
 import type { ExtractedRecipe } from "@/lib/types";
 
 export default function AddRecipePage() {
+  const { t } = useLocale();
   const router = useRouter();
   const { upsertRecipe } = useRecipes();
   const [url, setUrl] = useState("");
@@ -33,11 +35,11 @@ export default function AddRecipePage() {
         error?: string;
       };
       if (!response.ok || !data.recipe) {
-        throw new Error(data.error ?? "The recipe could not be extracted.");
+        throw new Error(data.error ?? t("add.error.extract"));
       }
       setDraft(draftFromExtracted(data.recipe));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(err instanceof Error ? err.message : t("add.error.generic"));
     } finally {
       setLoading(false);
     }
@@ -47,7 +49,7 @@ export default function AddRecipePage() {
     if (!draft) return;
     const recipe = recipeFromDraft(draft);
     if (recipe.ingredients.length === 0) {
-      setError("Add at least one ingredient.");
+      setError(t("add.error.ingredient"));
       return;
     }
     upsertRecipe(recipe);
@@ -57,12 +59,9 @@ export default function AddRecipePage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <p className="text-primary text-sm font-medium">New recipe</p>
-        <h1 className="font-heading text-4xl tracking-tight">Paste a link</h1>
-        <p className="text-muted-foreground mt-2 text-base">
-          The app pulls the photo, ingredients, servings, and method. If the page
-          does not share that data, add the recipe by hand.
-        </p>
+        <p className="text-primary text-sm font-medium">{t("add.eyebrow")}</p>
+        <h1 className="font-heading text-4xl tracking-tight">{t("add.title")}</h1>
+        <p className="text-muted-foreground mt-2 text-base">{t("add.blurb")}</p>
       </div>
 
       <form
@@ -73,7 +72,7 @@ export default function AddRecipePage() {
         }}
       >
         <label htmlFor="url" className="text-sm font-medium">
-          Recipe link
+          {t("add.linkLabel")}
         </label>
         <div className="mt-2 flex flex-col gap-2 sm:flex-row">
           <Input
@@ -85,7 +84,7 @@ export default function AddRecipePage() {
           />
           <Button type="submit" disabled={loading || !url.trim()} className="h-11 rounded-xl px-4 text-sm">
             <LinkSimpleIcon />
-            {loading ? "Reading the page…" : "Pull recipe"}
+            {loading ? t("add.reading") : t("add.pull")}
           </Button>
         </div>
         <Button
@@ -98,15 +97,15 @@ export default function AddRecipePage() {
           }}
         >
           <NotePencilIcon />
-          Add by hand
+          {t("add.byHand")}
         </Button>
       </form>
 
       {error ? (
         <Alert variant="destructive" className="rounded-2xl">
-          <AlertTitle>Could not pull that recipe</AlertTitle>
+          <AlertTitle>{t("add.pullErrorTitle")}</AlertTitle>
           <AlertDescription>
-            {error} Fix the link or continue by hand.
+            {error} {t("add.pullErrorHint")}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -116,14 +115,14 @@ export default function AddRecipePage() {
           <RecipeForm draft={draft} onChange={setDraft} />
           <div className="flex flex-wrap gap-2">
             <Button onClick={save} className="h-11 rounded-full px-5 text-sm">
-              Save to library
+              {t("add.save")}
             </Button>
             <Button
               variant="outline"
               className="h-11 rounded-full px-5 text-sm"
               onClick={() => setDraft(null)}
             >
-              Cancel
+              {t("add.cancel")}
             </Button>
           </div>
         </div>

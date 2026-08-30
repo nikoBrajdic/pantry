@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { FireIcon, CaretDownIcon, PlusCircleIcon } from "@phosphor-icons/react";
 import { RecipeCard } from "@/components/recipe-card";
+import { useLocale } from "@/components/locale-provider";
 import { useRecipes } from "@/components/recipe-provider";
 import { ShelfLoading } from "@/components/shelf-loading";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,12 @@ import {
   MEAL_FILTERS,
   PACE_OPTIONS,
 } from "@/lib/tags";
+import {
+  difficultyMessageKey,
+  paceMessageKey,
+  tagMessageKey,
+  type MessageKey,
+} from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { Difficulty, Pace } from "@/lib/types";
 
@@ -20,6 +27,7 @@ type Shelf = "all" | "keepers" | "wishlist" | "hits";
 
 export default function LibraryPage() {
   const { recipes, ready, syncState } = useRecipes();
+  const { t } = useLocale();
   const [shelf, setShelf] = useState<Shelf>("all");
   const [difficulty, setDifficulty] = useState<Difficulty | "">("");
   const [pace, setPace] = useState<Pace | "">("");
@@ -59,6 +67,15 @@ export default function LibraryPage() {
   const hasFilters = Boolean(difficulty || pace || meal || ingredient);
   const activeFilterCount = [difficulty, pace, meal, ingredient].filter(Boolean).length;
 
+  const shelfTitleKey: MessageKey =
+    shelf === "all"
+      ? "library.title.all"
+      : shelf === "hits"
+        ? "library.title.hits"
+        : shelf === "wishlist"
+          ? "library.title.wishlist"
+          : "library.title.keepers";
+
   if (!ready) {
     return <ShelfLoading />;
   }
@@ -67,43 +84,30 @@ export default function LibraryPage() {
     <div className="space-y-6">
       {syncState === "error" && recipes.length === 0 ? (
         <div className="rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">
-          Could not load your shelf from Supabase. Confirm both SQL migrations were run in the
-          SQL editor, then sign out and back in.
+          {t("library.syncError")}
         </div>
       ) : null}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-primary text-sm font-medium">On your shelf</p>
-          <h1 className="font-heading text-4xl tracking-tight">
-            {shelf === "all"
-              ? "All recipes"
-              : shelf === "hits"
-                ? "Kitchen hits"
-                : shelf === "wishlist"
-                  ? "Wishlist"
-                  : "Keepers"}
-          </h1>
-          <p className="text-muted-foreground mt-2 max-w-xl text-base">
-            All recipes is everything on the shelf. Keepers are the ones you stand by, the
-            wishlist is what you still want to try, and Kitchen hits are ranked by how many
-            times you cooked them.
-          </p>
+          <p className="text-primary text-sm font-medium">{t("library.eyebrow")}</p>
+          <h1 className="font-heading text-4xl tracking-tight">{t(shelfTitleKey)}</h1>
+          <p className="text-muted-foreground mt-2 max-w-xl text-base">{t("library.blurb")}</p>
         </div>
         <Button render={<Link href="/add" />} className="h-11 rounded-full px-4 text-sm">
           <PlusCircleIcon className="size-4" />
-          Add a recipe
+          {t("library.add")}
         </Button>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {(
           [
-            ["all", "All recipes", counts.all],
-            ["keepers", "Keepers", counts.keepers],
-            ["wishlist", "Wishlist", counts.wishlist],
-            ["hits", "Kitchen hits", counts.hits],
-          ] as [Shelf, string, number][]
-        ).map(([id, label, count]) => (
+            ["all", "library.title.all", counts.all],
+            ["keepers", "library.title.keepers", counts.keepers],
+            ["wishlist", "library.title.wishlist", counts.wishlist],
+            ["hits", "library.title.hits", counts.hits],
+          ] as [Shelf, MessageKey, number][]
+        ).map(([id, labelKey, count]) => (
           <button
             key={id}
             type="button"
@@ -116,7 +120,7 @@ export default function LibraryPage() {
             )}
           >
             {id === "hits" ? <FireIcon className="size-4" /> : null}
-            {label}
+            {t(labelKey)}
             <span className="opacity-80">{count}</span>
           </button>
         ))}
@@ -133,7 +137,7 @@ export default function LibraryPage() {
             <CaretDownIcon
               className={cn("size-4 transition-transform", filtersOpen ? "rotate-0" : "-rotate-90")}
             />
-            Filters
+            {t("library.filters")}
             {activeFilterCount > 0 ? (
               <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
                 {activeFilterCount}
@@ -151,59 +155,73 @@ export default function LibraryPage() {
                 setIngredient("");
               }}
             >
-              Clear filters
+              {t("library.clearFilters")}
             </button>
           ) : null}
         </div>
 
         {filtersOpen ? (
           <div className="space-y-4">
-            <FilterRow label="Difficulty">
-              {DIFFICULTY_OPTIONS.map((option) => (
-                <FilterChip
-                  key={option.id}
-                  active={difficulty === option.id}
-                  onClick={() => setDifficulty(difficulty === option.id ? "" : option.id)}
-                >
-                  {option.label}
-                </FilterChip>
-              ))}
+            <FilterRow label={t("library.filter.difficulty")}>
+              {DIFFICULTY_OPTIONS.map((option) => {
+                const key = difficultyMessageKey(option.id);
+                return (
+                  <FilterChip
+                    key={option.id}
+                    active={difficulty === option.id}
+                    onClick={() => setDifficulty(difficulty === option.id ? "" : option.id)}
+                  >
+                    {key ? t(key) : option.label}
+                  </FilterChip>
+                );
+              })}
             </FilterRow>
 
-            <FilterRow label="Time">
-              {PACE_OPTIONS.map((option) => (
-                <FilterChip
-                  key={option.id}
-                  active={pace === option.id}
-                  onClick={() => setPace(pace === option.id ? "" : option.id)}
-                >
-                  {option.label}
-                </FilterChip>
-              ))}
+            <FilterRow label={t("library.filter.time")}>
+              {PACE_OPTIONS.map((option) => {
+                const key = paceMessageKey(option.id);
+                return (
+                  <FilterChip
+                    key={option.id}
+                    active={pace === option.id}
+                    onClick={() => setPace(pace === option.id ? "" : option.id)}
+                  >
+                    {key ? t(key) : option.label}
+                  </FilterChip>
+                );
+              })}
             </FilterRow>
 
-            <FilterRow label="Meal">
-              {MEAL_FILTERS.map((option) => (
-                <FilterChip
-                  key={option.id}
-                  active={meal === option.id}
-                  onClick={() => setMeal(meal === option.id ? "" : option.id)}
-                >
-                  {option.label}
-                </FilterChip>
-              ))}
+            <FilterRow label={t("library.filter.meal")}>
+              {MEAL_FILTERS.map((option) => {
+                const key = tagMessageKey(option.id);
+                return (
+                  <FilterChip
+                    key={option.id}
+                    active={meal === option.id}
+                    onClick={() => setMeal(meal === option.id ? "" : option.id)}
+                  >
+                    {key ? t(key) : option.label}
+                  </FilterChip>
+                );
+              })}
             </FilterRow>
 
-            <FilterRow label="Ingredient">
-              {INGREDIENT_FILTERS.map((option) => (
-                <FilterChip
-                  key={option.id}
-                  active={ingredient === option.id}
-                  onClick={() => setIngredient(ingredient === option.id ? "" : option.id)}
-                >
-                  {option.label}
-                </FilterChip>
-              ))}
+            <FilterRow label={t("library.filter.ingredient")}>
+              {INGREDIENT_FILTERS.map((option) => {
+                const key = tagMessageKey(option.id);
+                return (
+                  <FilterChip
+                    key={option.id}
+                    active={ingredient === option.id}
+                    onClick={() =>
+                      setIngredient(ingredient === option.id ? "" : option.id)
+                    }
+                  >
+                    {key ? t(key) : option.label}
+                  </FilterChip>
+                );
+              })}
             </FilterRow>
           </div>
         ) : null}
@@ -211,18 +229,18 @@ export default function LibraryPage() {
 
       {filtered.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-border bg-card/60 px-6 py-16 text-center">
-          <h2 className="font-heading text-2xl">Nothing on this shelf yet</h2>
+          <h2 className="font-heading text-2xl">{t("library.empty.title")}</h2>
           <p className="text-muted-foreground mx-auto mt-2 max-w-md">
             {hasFilters
-              ? "Nothing matches these filters. Clear them or try another combination."
+              ? t("library.empty.filters")
               : shelf === "hits"
-                ? "Cook a recipe all the way through — check every ingredient and step — and it lands here."
+                ? t("library.empty.hits")
                 : shelf === "all"
-                  ? "Add a recipe from a link to get the shelf started."
-                  : "Add a recipe from a link, or move one from another list."}
+                  ? t("library.empty.all")
+                  : t("library.empty.list")}
           </p>
           <Button render={<Link href="/add" />} className="mt-5 h-11 rounded-full px-4 text-sm">
-            Add a recipe
+            {t("library.add")}
           </Button>
         </div>
       ) : (

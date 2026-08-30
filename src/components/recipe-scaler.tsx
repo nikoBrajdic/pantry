@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MinusIcon, PlusIcon } from "@phosphor-icons/react";
+import { useLocale } from "@/components/locale-provider";
 import { formatAmount, scaleFromHave, scaleServings } from "@/lib/ingredients";
 import type { Recipe } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -45,10 +46,12 @@ export function RecipeScaler({
   recipe: Recipe;
   scale: ReturnType<typeof useRecipeScale>;
 }) {
+  const { t } = useLocale();
+
   return (
     <div className="space-y-4">
       <section className="rounded-3xl border border-border bg-card p-4 sm:p-5">
-        <p className="text-sm font-medium">How many servings?</p>
+        <p className="text-sm font-medium">{t("scaler.servingsQuestion")}</p>
         <div className="mt-3 flex items-center gap-3">
           <Button
             type="button"
@@ -64,7 +67,7 @@ export function RecipeScaler({
           </Button>
           <div className="min-w-16 text-center">
             <p className="font-numeric text-3xl">{formatAmount(scale.shownServings)}</p>
-            <p className="text-muted-foreground text-xs">servings</p>
+            <p className="text-muted-foreground text-xs">{t("scaler.servings")}</p>
           </div>
           <Button
             type="button"
@@ -80,18 +83,16 @@ export function RecipeScaler({
           </Button>
         </div>
         <p className="text-muted-foreground mt-3 text-sm">
-          The original is for {recipe.servings}. Amounts update as you change this.
+          {t("scaler.originalBlurb", { count: recipe.servings })}
         </p>
       </section>
 
       <section className="rounded-3xl border border-border bg-card p-4 sm:p-5">
-        <p className="text-sm font-medium">Or scale from what you have</p>
-        <p className="text-muted-foreground mt-1 text-sm">
-          If you only have 300 g flour, pick flour and type 300 — everything else follows.
-        </p>
+        <p className="text-sm font-medium">{t("scaler.haveQuestion")}</p>
+        <p className="text-muted-foreground mt-1 text-sm">{t("scaler.haveHint")}</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_8rem]">
           <div className="space-y-1.5">
-            <Label htmlFor="have-ing">Ingredient</Label>
+            <Label htmlFor="have-ing">{t("scaler.ingredient")}</Label>
             <select
               id="have-ing"
               value={scale.haveId}
@@ -99,7 +100,7 @@ export function RecipeScaler({
               className="border-input bg-background text-foreground h-11 w-full rounded-xl border px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50 dark:bg-input/30"
             >
               <option value="" className="bg-background text-foreground">
-                Choose an ingredient
+                {t("scaler.choose")}
               </option>
               {scale.scalable.map((item) => (
                 <option
@@ -113,7 +114,7 @@ export function RecipeScaler({
             </select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="have-amt">Amount</Label>
+            <Label htmlFor="have-amt">{t("scaler.amount")}</Label>
             <Input
               id="have-amt"
               value={scale.haveAmount}
@@ -125,8 +126,10 @@ export function RecipeScaler({
         </div>
         {scale.factorFromHave ? (
           <p className="mt-3 text-sm text-primary">
-            Scaled to {formatAmount(scale.shownServings)} servings (
-            {formatAmount(scale.factorFromHave)}×).
+            {t("scaler.scaledTo", {
+              servings: formatAmount(scale.shownServings),
+              factor: formatAmount(scale.factorFromHave),
+            })}
           </p>
         ) : null}
       </section>
