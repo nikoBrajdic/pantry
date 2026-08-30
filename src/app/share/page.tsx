@@ -15,18 +15,21 @@ export default function SharePage() {
   const {
     ready,
     household,
-    households,
+    kitchens,
     recipes,
     syncState,
     createHousehold,
     joinHousehold,
     switchHousehold,
     leaveHousehold,
+    renameKitchen,
     refreshHousehold,
   } = useRecipes();
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   if (!ready) return <ShelfLoading />;
 
@@ -61,6 +64,25 @@ export default function SharePage() {
     setMessage(t("share.copied"));
   }
 
+  function startRename(kitchenCode: string, currentName: string) {
+    setRenaming(kitchenCode);
+    setRenameValue(currentName === kitchenCode ? "" : currentName);
+  }
+
+  async function saveRename(kitchenCode: string) {
+    setBusy(true);
+    setMessage("");
+    try {
+      await renameKitchen(kitchenCode, renameValue);
+      setRenaming(null);
+      setMessage(t("share.renamed"));
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : t("share.errorRename"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
@@ -69,7 +91,7 @@ export default function SharePage() {
         <p className="text-muted-foreground mt-2 text-base">{t("share.blurb")}</p>
       </div>
 
-      {households.length > 0 ? (
+      {kitchens.length > 0 ? (
         <section className="space-y-3 rounded-3xl border border-border bg-card p-5">
           <h2 className="font-heading text-2xl">{t("share.yourKitchens")}</h2>
           <p className="text-muted-foreground text-sm">{t("share.yourKitchensBlurb")}</p>
@@ -90,55 +112,101 @@ export default function SharePage() {
                 <span className="text-primary text-xs font-medium">{t("share.active")}</span>
               ) : null}
             </button>
-            {households.map((item) => (
+            {kitchens.map((item) => (
               <div
-                key={item}
+                key={item.code}
                 className={cn(
                   "rounded-2xl border px-4 py-3",
-                  household === item ? "border-primary bg-primary/8" : "border-border",
+                  household === item.code ? "border-primary bg-primary/8" : "border-border",
                 )}
               >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    className="text-left"
-                    onClick={() => void switchHousehold(item)}
-                  >
-                    <span className="font-numeric block text-2xl tracking-wide">{item}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {household === item
-                        ? t("share.recipesCount", {
-                            count: recipes.length,
-                            status:
-                              syncState === "saving"
-                                ? t("share.saving")
-                                : syncState === "error"
-                                  ? t("share.syncFailed")
-                                  : t("share.connected"),
-                          })
-                        : t("share.tapToOpen")}
-                    </span>
-                  </button>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-full"
-                      onClick={() => void copyCode(item)}
-                    >
-                      <CopyIcon />
-                      {t("share.copy")}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="rounded-full"
-                      onClick={() => void leaveHousehold(item)}
-                    >
-                      {t("share.leave")}
-                    </Button>
+                {renaming === item.code ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={renameValue}
+                      onChange={(event) => setRenameValue(event.target.value)}
+                      placeholder={t("share.namePlaceholder")}
+                      className="h-10 rounded-xl"
+                      autoFocus
+                      maxLength={48}
+                    />
+                    <p className="text-muted-foreground font-numeric text-xs tracking-wide">
+                      {t("share.codeLabel", { code: item.code })}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        className="rounded-full"
+                        disabled={busy || !renameValue.trim()}
+                        onClick={() => void saveRename(item.code)}
+                      >
+                        {t("share.saveName")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="rounded-full"
+                        disabled={busy}
+                        onClick={() => setRenaming(null)}
+                      >
+                        {t("share.cancelRename")}
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      className="min-w-0 flex-1 text-left"
+                      onClick={() => void switchHousehold(item.code)}
+                    >
+                      <span className="block text-base font-medium">{item.name}</span>
+                      <span className="text-muted-foreground font-numeric block text-xs tracking-wide">
+                        {t("share.codeLabel", { code: item.code })}
+                      </span>
+                      <span className="text-muted-foreground mt-0.5 block text-xs">
+                        {household === item.code
+                          ? t("share.recipesCount", {
+                              count: recipes.length,
+                              status:
+                                syncState === "saving"
+                                  ? t("share.saving")
+                                  : syncState === "error"
+                                    ? t("share.syncFailed")
+                                    : t("share.connected"),
+                            })
+                          : t("share.tapToOpen")}
+                      </span>
+                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full"
+                        onClick={() => startRename(item.code, item.name)}
+                      >
+                        {t("share.rename")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full"
+                        onClick={() => void copyCode(item.code)}
+                      >
+                        <CopyIcon />
+                        {t("share.copy")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="rounded-full"
+                        onClick={() => void leaveHousehold(item.code)}
+                      >
+                        {t("share.leave")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -1,11 +1,12 @@
 import { SAMPLE_RECIPES } from "./samples";
 import { normalizeRecipe } from "./normalize";
-import type { Recipe, UserLibrary } from "./types";
+import type { KitchenSummary, Recipe, UserLibrary } from "./types";
 import {
   addMembership,
-  listMemberships,
+  listKitchens,
   readHousehold,
   removeMembership,
+  renameHousehold,
   writeHousehold,
 } from "./household-store";
 import { createClient } from "./supabase/server";
@@ -66,7 +67,7 @@ async function ensureProfile(
 async function toLibrary(
   userEmail: string,
   profile: ProfileRow,
-  householdCodes: string[],
+  kitchens: KitchenSummary[],
 ): Promise<UserLibrary> {
   if (profile.household_code) {
     const household = await readHousehold(profile.household_code);
@@ -74,7 +75,8 @@ async function toLibrary(
       return {
         email: userKey(userEmail),
         householdCode: household.code,
-        householdCodes,
+        kitchens,
+        householdCodes: kitchens.map((item) => item.code),
         recipes: household.recipes.map(normalizeRecipe),
         updatedAt: household.updatedAt,
       };
@@ -84,7 +86,8 @@ async function toLibrary(
   return {
     email: userKey(userEmail),
     householdCode: "",
-    householdCodes,
+    kitchens,
+    householdCodes: kitchens.map((item) => item.code),
     recipes: ((profile.recipes ?? []) as Recipe[]).map(normalizeRecipe),
     updatedAt: profile.updated_at,
   };
@@ -114,18 +117,17 @@ export async function readUserLibrary(email?: string): Promise<UserLibrary> {
     profile = data as ProfileRow;
   }
 
-  // Ensure legacy active kitchen is also a membership.
   if (profile.household_code) {
     await addMembership(user.id, profile.household_code).catch(() => undefined);
   }
 
-  const householdCodes = await listMemberships(user.id);
-  return toLibrary(user.email!, profile, householdCodes);
+  const kitchens = await listKitchens(user.id);
+  return toLibrary(user.email!, profile, kitchens);
 }
 
 export async function writeUserLibrary(library: UserLibrary) {
   const { supabase, user } = await requireAuthUser();
-  const profile = await ensureProfile(supabase, { id: user.id, email: user.email! });
+  await ensureProfile(supabase, { id: user.id, email: user.email! });
 
   const householdCode = library.householdCode ?? "";
   const recipes = library.recipes.map(normalizeRecipe);
@@ -144,8 +146,8 @@ export async function writeUserLibrary(library: UserLibrary) {
       .select("id, email, household_code, recipes, updated_at")
       .single();
     if (error) throw new Error(error.message);
-    const householdCodes = await listMemberships(user.id);
-    return toLibrary(user.email!, data as ProfileRow, householdCodes);
+    const kitchens = await listKitchens(user.id);
+    return toLibrary(user.email!, data as ProfileRow, kitchens);
   }
 
   const { data, error } = await supabase
@@ -160,11 +162,12 @@ export async function writeUserLibrary(library: UserLibrary) {
     .single();
   if (error) throw new Error(error.message);
 
-  const householdCodes = await listMemberships(user.id);
+  const kitchens = await listKitchens(user.id);
   return {
     email: userKey(user.email!),
     householdCode: "",
-    householdCodes,
+    kitchens,
+    householdCodes: kitchens.map((item) => item.code),
     recipes: ((data.recipes ?? []) as Recipe[]).map(normalizeRecipe),
     updatedAt: data.updated_at,
   } satisfies UserLibrary;
@@ -179,6 +182,7 @@ export async function saveUserRecipes(
   return writeUserLibrary({
     email,
     householdCode: householdCode ?? current?.householdCode ?? "",
+    kitchens: current?.kitchens ?? [],
     householdCodes: current?.householdCodes ?? [],
     recipes,
     updatedAt: new Date().toISOString(),
@@ -198,12 +202,12 @@ export async function switchHousehold(code: string) {
       .select("id, email, household_code, recipes, updated_at")
       .single();
     if (error) throw new Error(error.message);
-    const householdCodes = await listMemberships(user.id);
-    return toLibrary(user.email!, data as ProfileRow, householdCodes);
+    const kitchens = await listKitchens(user.id);
+    return toLibrary(user.email!, data as ProfileRow, kitchens);
   }
 
-  const memberships = await listMemberships(user.id);
-  if (!memberships.includes(clean)) {
+  const kitchens = await listKitchens(user.id);
+  if (!kitchens.some((item) => item.code === clean)) {
     throw new Error("You are not in that kitchen.");
   }
 
@@ -214,7 +218,7 @@ export async function switchHousehold(code: string) {
     .select("id, email, household_code, recipes, updated_at")
     .single();
   if (error) throw new Error(error.message);
-  return toLibrary(user.email!, { ...profile, ...data } as ProfileRow, memberships);
+  return toLibrary(user.email!, { ...profile, ...data } as ProfileRow, kitchens);
 }
 
 export async function leaveHouseholdMembership(code: string) {
@@ -223,10 +227,7 @@ export async function leaveHouseholdMembership(code: string) {
   const clean = code.trim().toUpperCase();
   await removeMembership(user.id, clean);
 
-  const nextActive =
-    profile.household_code === clean
-      ? ""
-      : profile.household_code;
+  const nextActive = profile.household_code === clean ? "" : profile.household_code;
 
   const { data, error } = await supabase
     .from("profiles")
@@ -239,6 +240,17 @@ export async function leaveHouseholdMembership(code: string) {
     .single();
   if (error) throw new Error(error.message);
 
-  const householdCodes = await listMemberships(user.id);
-  return toLibrary(user.email!, data as ProfileRow, householdCodes);
+  const kitchens = await listKitchens(user.id);
+  return toLibrary(user.email!, data as ProfileRow, kitchens);
+}
+
+export async function renameKitchen(code: string, name: string) {
+  const { user } = await requireAuthUser();
+  const kitchens = await listKitchens(user.id);
+  const clean = code.trim().toUpperCase();
+  if (!kitchens.some((item) => item.code === clean)) {
+    throw new Error("You are not in that kitchen.");
+  }
+  await renameHousehold(clean, name);
+  return readUserLibrary();
 }

@@ -937,6 +937,8 @@
     background-image:
       radial-gradient(circle at top left, var(--glow-a), transparent 40%),
       radial-gradient(circle at top right, var(--glow-b), transparent 34%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
   .font-heading {
     font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;

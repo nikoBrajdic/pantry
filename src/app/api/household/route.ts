@@ -3,6 +3,7 @@ import { requireEmail } from "@/lib/session-user";
 import {
   leaveHouseholdMembership,
   readUserLibrary,
+  renameKitchen,
   switchHousehold,
   writeUserLibrary,
 } from "@/lib/user-store";
@@ -28,8 +29,9 @@ export async function POST(request: Request) {
   try {
     const email = await requireEmail();
     const body = (await request.json()) as {
-      action?: "create" | "join" | "switch" | "leave";
+      action?: "create" | "join" | "switch" | "leave" | "rename";
       code?: string;
+      name?: string;
       recipes?: Recipe[];
     };
     const current = await readUserLibrary(email);
@@ -49,6 +51,11 @@ export async function POST(request: Request) {
       return Response.json({ library });
     }
 
+    if (body.action === "rename") {
+      const library = await renameKitchen(body.code ?? "", body.name ?? "");
+      return Response.json({ library });
+    }
+
     if (body.action === "join") {
       const household = await readHousehold(body.code ?? "");
       if (!household) {
@@ -59,7 +66,7 @@ export async function POST(request: Request) {
       const library = await writeUserLibrary({
         email,
         householdCode: household.code,
-        householdCodes: [...new Set([...current.householdCodes, household.code])],
+        kitchens: current.kitchens,
         recipes: merged,
         updatedAt: new Date().toISOString(),
       });
@@ -76,7 +83,7 @@ export async function POST(request: Request) {
     const library = await writeUserLibrary({
       email,
       householdCode: code,
-      householdCodes: [...new Set([...current.householdCodes, code])],
+      kitchens: current.kitchens,
       recipes: household.recipes,
       updatedAt: household.updatedAt,
     });

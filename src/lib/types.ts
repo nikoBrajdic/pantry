@@ -55,15 +55,23 @@ export type ExtractedRecipe = {
 
 export type HouseholdPayload = {
   code: string;
+  name: string;
   recipes: Recipe[];
   updatedAt: string;
   memberCount?: number;
 };
 
+export type KitchenSummary = {
+  code: string;
+  name: string;
+};
+
 export type UserLibrary = {
   email: string;
   householdCode: string;
-  householdCodes: string[];
+  kitchens: KitchenSummary[];
+  /** @deprecated prefer kitchens */
+  householdCodes?: string[];
   recipes: Recipe[];
   updatedAt: string;
 };

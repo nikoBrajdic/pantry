@@ -12,15 +12,22 @@ import {
 import { useAuth } from "@/components/session-provider";
 import { mergeRecipes } from "@/lib/storage";
 import { normalizeRecipe } from "@/lib/normalize";
-import type { Recipe, RecipeList } from "@/lib/types";
+import type { KitchenSummary, Recipe, RecipeList } from "@/lib/types";
 
 type SyncState = "idle" | "saving" | "ok" | "error";
+
+type LibraryPayload = {
+  recipes: Recipe[];
+  householdCode: string;
+  kitchens?: KitchenSummary[];
+  householdCodes?: string[];
+};
 
 type RecipeContextValue = {
   ready: boolean;
   recipes: Recipe[];
   household: string;
-  households: string[];
+  kitchens: KitchenSummary[];
   syncState: SyncState;
   upsertRecipe: (recipe: Recipe) => void;
   removeRecipe: (id: string) => void;
@@ -30,32 +37,35 @@ type RecipeContextValue = {
   joinHousehold: (code: string) => Promise<void>;
   switchHousehold: (code: string) => Promise<void>;
   leaveHousehold: (code?: string) => Promise<void>;
+  renameKitchen: (code: string, name: string) => Promise<void>;
   refreshHousehold: () => Promise<void>;
 };
 
 const RecipeContext = createContext<RecipeContextValue | null>(null);
 
+function kitchensFromLibrary(library: LibraryPayload): KitchenSummary[] {
+  if (library.kitchens?.length) return library.kitchens;
+  return (library.householdCodes ?? []).map((code) => ({ code, name: code }));
+}
+
 export function RecipeProvider({ children }: { children: React.ReactNode }) {
   const { status } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [household, setHousehold] = useState("");
-  const [households, setHouseholds] = useState<string[]>([]);
+  const [kitchens, setKitchens] = useState<KitchenSummary[]>([]);
   const [ready, setReady] = useState(false);
   const [syncState, setSyncState] = useState<SyncState>("idle");
   const householdRef = useRef("");
   const recipesRef = useRef<Recipe[]>([]);
 
-  const applyLibrary = useCallback(
-    (library: { recipes: Recipe[]; householdCode: string; householdCodes?: string[] }) => {
-      const next = library.recipes.map(normalizeRecipe);
-      recipesRef.current = next;
-      householdRef.current = library.householdCode ?? "";
-      setRecipes(next);
-      setHousehold(library.householdCode ?? "");
-      setHouseholds(library.householdCodes ?? []);
-    },
-    [],
-  );
+  const applyLibrary = useCallback((library: LibraryPayload) => {
+    const next = library.recipes.map(normalizeRecipe);
+    recipesRef.current = next;
+    householdRef.current = library.householdCode ?? "";
+    setRecipes(next);
+    setHousehold(library.householdCode ?? "");
+    setKitchens(kitchensFromLibrary(library));
+  }, []);
 
   const persist = useCallback(async (next: Recipe[], code = householdRef.current) => {
     setSyncState("saving");
@@ -82,11 +92,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       try {
         const response = await fetch("/api/recipes");
         const data = (await response.json()) as {
-          library?: {
-            recipes: Recipe[];
-            householdCode: string;
-            householdCodes?: string[];
-          };
+          library?: LibraryPayload;
           error?: string;
         };
         if (cancelled) return;
@@ -182,11 +188,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     });
     const data = (await response.json()) as {
       household?: { code: string; recipes: Recipe[] };
-      library?: {
-        recipes: Recipe[];
-        householdCode: string;
-        householdCodes?: string[];
-      };
+      library?: LibraryPayload;
       error?: string;
     };
     if (!response.ok || !data.household || !data.library) {
@@ -205,11 +207,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ action: "join", code }),
       });
       const data = (await response.json()) as {
-        library?: {
-          recipes: Recipe[];
-          householdCode: string;
-          householdCodes?: string[];
-        };
+        library?: LibraryPayload;
         error?: string;
       };
       if (!response.ok || !data.library) {
@@ -229,11 +227,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ action: "switch", code }),
       });
       const data = (await response.json()) as {
-        library?: {
-          recipes: Recipe[];
-          householdCode: string;
-          householdCodes?: string[];
-        };
+        library?: LibraryPayload;
         error?: string;
       };
       if (!response.ok || !data.library) {
@@ -253,15 +247,31 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ action: "leave", code: code ?? householdRef.current }),
       });
       const data = (await response.json()) as {
-        library?: {
-          recipes: Recipe[];
-          householdCode: string;
-          householdCodes?: string[];
-        };
+        library?: LibraryPayload;
         error?: string;
       };
       if (!response.ok || !data.library) {
         throw new Error(data.error ?? "Could not leave kitchen.");
+      }
+      applyLibrary(data.library);
+      setSyncState("ok");
+    },
+    [applyLibrary],
+  );
+
+  const renameKitchen = useCallback(
+    async (code: string, name: string) => {
+      const response = await fetch("/api/household", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "rename", code, name }),
+      });
+      const data = (await response.json()) as {
+        library?: LibraryPayload;
+        error?: string;
+      };
+      if (!response.ok || !data.library) {
+        throw new Error(data.error ?? "Could not rename kitchen.");
       }
       applyLibrary(data.library);
       setSyncState("ok");
@@ -289,7 +299,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       ready: ready && status === "authenticated",
       recipes,
       household,
-      households,
+      kitchens,
       syncState,
       upsertRecipe,
       removeRecipe,
@@ -299,6 +309,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       joinHousehold,
       switchHousehold,
       leaveHousehold,
+      renameKitchen,
       refreshHousehold,
     }),
     [
@@ -306,7 +317,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       status,
       recipes,
       household,
-      households,
+      kitchens,
       syncState,
       upsertRecipe,
       removeRecipe,
@@ -316,6 +327,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       joinHousehold,
       switchHousehold,
       leaveHousehold,
+      renameKitchen,
       refreshHousehold,
     ],
   );

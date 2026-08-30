@@ -25,7 +25,7 @@ function ImportInner() {
   const { t } = useLocale();
   const params = useSearchParams();
   const router = useRouter();
-  const { upsertRecipe, recipes, household, households, switchHousehold, ready } =
+  const { upsertRecipe, recipes, household, kitchens, switchHousehold, ready } =
     useRecipes();
   const code = params.get("c");
   const encoded = params.get("r");
@@ -218,20 +218,20 @@ function ImportInner() {
           >
             <span className="text-sm font-medium">{t("import.personal")}</span>
           </button>
-          {households.map((item) => (
+          {kitchens.map((item) => (
             <button
-              key={item}
+              key={item.code}
               type="button"
-              onClick={() => setTargetKitchen(item)}
+              onClick={() => setTargetKitchen(item.code)}
               className={cn(
                 "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left",
-                targetKitchen === item
+                targetKitchen === item.code
                   ? "border-primary bg-primary/8"
                   : "border-border hover:border-primary/40",
               )}
             >
-              <span className="font-numeric text-sm tracking-wide">
-                {t("import.kitchen", { code: item })}
+              <span className="text-sm font-medium">
+                {t("import.kitchen", { name: item.name, code: item.code })}
               </span>
             </button>
           ))}

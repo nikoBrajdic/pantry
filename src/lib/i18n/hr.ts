@@ -66,6 +66,9 @@ export const hr: Record<MessageKey, string> = {
   "library.empty.list": "Dodaj recept s linka ili premjesti s druge liste.",
   "library.syncError":
     "Nije uspjelo učitati policu iz Supabasea. Provjeri da su obje SQL migracije pokrenute u SQL editoru, pa se odjavi i prijavi ponovno.",
+  "library.kitchen": "Kuhinja",
+  "library.personal": "Osobna",
+  "library.switching": "Mijenjam kuhinju…",
 
   "card.keeper": "Skuhano",
   "card.wishlist": "Lista želja",
@@ -141,6 +144,13 @@ export const hr: Record<MessageKey, string> = {
   "share.copied": "Kod je kopiran.",
   "share.errorGeneric": "To nije uspjelo.",
   "share.errorCode": "Taj kod nije uspio.",
+  "share.rename": "Preimenuj",
+  "share.saveName": "Spremi",
+  "share.cancelRename": "Odustani",
+  "share.namePlaceholder": "Ime kuhinje",
+  "share.codeLabel": "Kod {code}",
+  "share.renamed": "Kuhinja je preimenovana.",
+  "share.errorRename": "Nije uspjelo preimenovati tu kuhinju.",
 
   "recipe.library": "Knjižnica",
   "recipe.keeper": "Skuhano",
@@ -273,7 +283,7 @@ export const hr: Record<MessageKey, string> = {
   "import.skip": "Preskoči",
   "import.saveTo": "Spremi u",
   "import.personal": "Osobna polica",
-  "import.kitchen": "Kuhinja {code}",
+  "import.kitchen": "{name}",
   "import.ingredients": "Sastojci",
   "import.method": "Postupak",
   "import.notes": "Što su promijenili",

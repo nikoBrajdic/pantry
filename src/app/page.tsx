@@ -26,7 +26,7 @@ import type { Difficulty, Pace } from "@/lib/types";
 type Shelf = "all" | "keepers" | "wishlist" | "hits";
 
 export default function LibraryPage() {
-  const { recipes, ready, syncState } = useRecipes();
+  const { recipes, ready, syncState, household, kitchens, switchHousehold } = useRecipes();
   const { t } = useLocale();
   const [shelf, setShelf] = useState<Shelf>("all");
   const [difficulty, setDifficulty] = useState<Difficulty | "">("");
@@ -34,6 +34,7 @@ export default function LibraryPage() {
   const [meal, setMeal] = useState("");
   const [ingredient, setIngredient] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [switching, setSwitching] = useState(false);
 
   const counts = useMemo(
     () => ({
@@ -80,6 +81,16 @@ export default function LibraryPage() {
     return <ShelfLoading />;
   }
 
+  async function openKitchen(code: string) {
+    if (code === household || switching) return;
+    setSwitching(true);
+    try {
+      await switchHousehold(code);
+    } finally {
+      setSwitching(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {syncState === "error" && recipes.length === 0 ? (
@@ -98,6 +109,50 @@ export default function LibraryPage() {
           {t("library.add")}
         </Button>
       </div>
+
+      {kitchens.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            {t("library.kitchen")}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={switching}
+              onClick={() => void openKitchen("")}
+              className={cn(
+                "rounded-full border px-4 py-2 text-sm",
+                !household
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card",
+                switching && "opacity-60",
+              )}
+            >
+              {t("library.personal")}
+            </button>
+            {kitchens.map((item) => (
+              <button
+                key={item.code}
+                type="button"
+                disabled={switching}
+                onClick={() => void openKitchen(item.code)}
+                className={cn(
+                  "rounded-full border px-4 py-2 text-sm",
+                  household === item.code
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card",
+                  switching && "opacity-60",
+                )}
+              >
+                {item.name}
+              </button>
+            ))}
+          </div>
+          {switching ? (
+            <p className="text-muted-foreground text-xs">{t("library.switching")}</p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         {(

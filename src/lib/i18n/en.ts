@@ -64,6 +64,9 @@ export const en = {
   "library.empty.list": "Add a recipe from a link, or move one from another list.",
   "library.syncError":
     "Could not load your shelf from Supabase. Confirm both SQL migrations were run in the SQL editor, then sign out and back in.",
+  "library.kitchen": "Kitchen",
+  "library.personal": "Personal",
+  "library.switching": "Switching kitchen…",
 
   "card.keeper": "Keeper",
   "card.wishlist": "Wishlist",
@@ -137,6 +140,13 @@ export const en = {
   "share.copied": "Code copied.",
   "share.errorGeneric": "That did not work.",
   "share.errorCode": "That code did not work.",
+  "share.rename": "Rename",
+  "share.saveName": "Save",
+  "share.cancelRename": "Cancel",
+  "share.namePlaceholder": "Kitchen name",
+  "share.codeLabel": "Code {code}",
+  "share.renamed": "Kitchen renamed.",
+  "share.errorRename": "Could not rename that kitchen.",
 
   "recipe.library": "Library",
   "recipe.keeper": "Keeper",
@@ -268,7 +278,7 @@ export const en = {
   "import.skip": "Skip",
   "import.saveTo": "Save to",
   "import.personal": "Personal shelf",
-  "import.kitchen": "Kitchen {code}",
+  "import.kitchen": "{name}",
   "import.ingredients": "Ingredients",
   "import.method": "Method",
   "import.notes": "What they changed",
