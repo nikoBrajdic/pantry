@@ -22,5 +22,5 @@ export function decodeRecipeShare(value: string): Recipe | null {
 }
 
 export function shareUrlFor(recipe: Recipe, origin: string) {
-  return `${origin}/uvezak?r=${encodeURIComponent(encodeRecipeShare(recipe))}`;
+  return `${origin}/import?r=${encodeURIComponent(encodeRecipeShare(recipe))}`;
 }

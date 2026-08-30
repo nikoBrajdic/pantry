@@ -152,7 +152,7 @@ function recipeFromNode(node: Record<string, unknown>, sourceUrl: string): Extra
     total > 0 ? (total <= 35 ? "quick" : "time-consuming") : undefined;
 
   return {
-    title: title || "Recept bez naslova",
+    title: title || "Untitled recipe",
     sourceUrl,
     imageUrl: firstImage(node.image, sourceUrl),
     servings: parseServings(node.recipeYield ?? node.yield),
@@ -194,7 +194,7 @@ function fallbackFromHtml(html: string, sourceUrl: string): ExtractedRecipe | nu
   if (ingredientBlocks.length === 0) return null;
 
   return {
-    title: decodeEntities(title).trim() || "Recept bez naslova",
+    title: decodeEntities(title).trim() || "Untitled recipe",
     sourceUrl,
     imageUrl: image ? resolveUrl(image, sourceUrl) : undefined,
     servings: 4,
@@ -217,8 +217,8 @@ export function extractRecipeFromHtml(html: string, sourceUrl: string): Extracte
   const fallback = fallbackFromHtml(html, sourceUrl);
   if (fallback) return fallback;
 
-  throw new Error(
-    "Na toj stranici nisam našla strukturirani recept. Pokušaj drugi link ili unesi recept ručno.",
+    throw new Error(
+    "That page did not include a structured recipe. Try another link or add it by hand.",
   );
 }
 
@@ -227,10 +227,10 @@ export function assertPublicHttpUrl(value: string) {
   try {
     parsed = new URL(value);
   } catch {
-    throw new Error("To ne izgleda kao valjan link.");
+    throw new Error("That does not look like a valid link.");
   }
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new Error("Link mora početi s http ili https.");
+    throw new Error("The link must start with http or https.");
   }
   const host = parsed.hostname.toLowerCase();
   if (
@@ -242,7 +242,7 @@ export function assertPublicHttpUrl(value: string) {
     host.startsWith("192.168.") ||
     host.startsWith("169.254.")
   ) {
-    throw new Error("Taj link nije javna web stranica.");
+    throw new Error("That link is not a public web page.");
   }
   return parsed.toString();
 }

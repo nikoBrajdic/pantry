@@ -1,5 +1,6 @@
 export type Difficulty = "easy" | "moderate" | "complicated";
 export type Pace = "quick" | "time-consuming";
+export type RecipeList = "keeper" | "wishlist";
 
 export type Ingredient = {
   raw: string;
@@ -22,6 +23,9 @@ export type Recipe = {
   nextDay: boolean;
   nextDayNote?: string;
   notes?: string;
+  list: RecipeList;
+  timesCooked: number;
+  lastCookedAt?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -38,6 +42,13 @@ export type ExtractedRecipe = {
 
 export type HouseholdPayload = {
   code: string;
+  recipes: Recipe[];
+  updatedAt: string;
+};
+
+export type UserLibrary = {
+  email: string;
+  householdCode: string;
   recipes: Recipe[];
   updatedAt: string;
 };

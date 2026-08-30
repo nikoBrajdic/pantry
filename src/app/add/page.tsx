@@ -33,11 +33,11 @@ export default function AddRecipePage() {
         error?: string;
       };
       if (!response.ok || !data.recipe) {
-        throw new Error(data.error ?? "Recept se nije mogao izvući.");
+        throw new Error(data.error ?? "The recipe could not be extracted.");
       }
       setDraft(draftFromExtracted(data.recipe));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Nešto je pošlo po zlu.");
+      setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -47,21 +47,21 @@ export default function AddRecipePage() {
     if (!draft) return;
     const recipe = recipeFromDraft(draft);
     if (recipe.ingredients.length === 0) {
-      setError("Dodaj barem jedan sastojak.");
+      setError("Add at least one ingredient.");
       return;
     }
     upsertRecipe(recipe);
-    router.push(`/recept/${recipe.id}`);
+    router.push(`/recipe/${recipe.id}`);
   }
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <p className="text-primary text-sm font-medium">Novi recept</p>
-        <h1 className="font-heading text-4xl tracking-tight">Zalijepi link</h1>
+        <p className="text-primary text-sm font-medium">New recipe</p>
+        <h1 className="font-heading text-4xl tracking-tight">Paste a link</h1>
         <p className="text-muted-foreground mt-2 text-base">
-          Aplikacija pokušava sama izvući sastojke, broj porcija i upute. Ako
-          stranica ne da podatke, unesi recept ručno — traje minutu.
+          The app pulls the photo, ingredients, servings, and method. If the page
+          does not share that data, add the recipe by hand.
         </p>
       </div>
 
@@ -73,7 +73,7 @@ export default function AddRecipePage() {
         }}
       >
         <label htmlFor="url" className="text-sm font-medium">
-          Link recepta
+          Recipe link
         </label>
         <div className="mt-2 flex flex-col gap-2 sm:flex-row">
           <Input
@@ -85,7 +85,7 @@ export default function AddRecipePage() {
           />
           <Button type="submit" disabled={loading || !url.trim()} className="h-11 rounded-xl px-4 text-sm">
             <LinkSimpleIcon />
-            {loading ? "Čitam stranicu…" : "Izvuci recept"}
+            {loading ? "Reading the page…" : "Pull recipe"}
           </Button>
         </div>
         <Button
@@ -98,15 +98,15 @@ export default function AddRecipePage() {
           }}
         >
           <NotePencilIcon />
-          Unesi ručno
+          Add by hand
         </Button>
       </form>
 
       {error ? (
         <Alert variant="destructive" className="rounded-2xl">
-          <AlertTitle>Nisam uspjela izvući recept</AlertTitle>
+          <AlertTitle>Could not pull that recipe</AlertTitle>
           <AlertDescription>
-            {error} Možeš ispraviti link ili nastaviti ručno.
+            {error} Fix the link or continue by hand.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -116,14 +116,14 @@ export default function AddRecipePage() {
           <RecipeForm draft={draft} onChange={setDraft} />
           <div className="flex flex-wrap gap-2">
             <Button onClick={save} className="h-11 rounded-full px-5 text-sm">
-              Spremi u knjižnicu
+              Save to library
             </Button>
             <Button
               variant="outline"
               className="h-11 rounded-full px-5 text-sm"
               onClick={() => setDraft(null)}
             >
-              Odustani
+              Cancel
             </Button>
           </div>
         </div>

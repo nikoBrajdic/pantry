@@ -1,34 +1,50 @@
 # Receptoteka
 
-Aplikacija za sažimanje i čuvanje recepata. Zalijepiš link, izvuče sastojke, broj porcija i upute. Možeš preračunati količine prema porcijama ili prema sastojku koji imaš, označiti tagove i težinu, upozoriti da se jelo jede sljedeći dan, potražiti recept po onome što je u frižideru i podijeliti knjižnicu s partnerom.
+A recipe library for two. Paste a link, pull the photo, ingredients, servings, and method, then scale amounts, tick off a cook, and keep the ones that earned a place.
 
-## Što možeš raditi
+## What you can do
 
-- **Dodaj iz linka** — na stranici Dodaj zalijepi URL recepta. Aplikacija čita uobičajene receptne stranice (schema.org / JSON-LD). Ako stranica ne da podatke, unesi recept ručno.
-- **Preračunaj** — na receptu biraj broj porcija, ili upiši koliko jednog sastojka imaš. Ostale količine se prilagode.
-- **Tagovi i oznake** — piletina, govedina, doručak, desert, kruh, pića… plus lako / srednje / komplicirano i brzo / dugo traje. Tu je i upozorenje „najbolje sljedeći dan“.
-- **Što imam** — upiši sastojke iz kuće, knjižnica predloži najbolje poklapanje.
-- **Podijeli** — otvori kućanstvo i pošalji kod partneru, ili pošalji jedan recept linkom.
+- **Sign in with Google** so the library belongs to you. Your partner signs in too and joins with a kitchen code.
+- **Add from a link** — the photo comes with the page. Replace it with a photo you upload.
+- **Keepers and wishlist** — split “we make this” from “we want to try this”.
+- **Notes** — write what you changed from the original.
+- **Checklists** — tick ingredients and steps. When everything is checked, that counts as a cook.
+- **Kitchen hits** — recipes ranked by how many times you cooked them.
+- **What’s in** — type what is in the fridge and find the best saved match.
 
-Na početku su u knjižnici četiri primjera da odmah vidiš kako radi pretraga i preračunavanje.
+The first sign-in seeds four sample recipes so you can try the shelves immediately.
 
-## Pokretanje
+## Run it
 
-Treba ti [Node.js](https://nodejs.org/) 20 ili noviji.
+You need [Node.js](https://nodejs.org/) 20 or newer.
 
 ```bash
+cp .env.example .env.local
+# add AUTH_SECRET (any long random string)
 npm install
 npm run dev
 ```
 
-Otvori [http://127.0.0.1:43147](http://127.0.0.1:43147).
+Open [http://127.0.0.1:43147](http://127.0.0.1:43147).
 
-## Dijeljenje
+## Google login
 
-Recepti se čuvaju u pregledniku (localStorage). Zajednički kod kućanstva sinkronizira knjižnicu preko poslužitelja na kojem aplikacija radi. Jedan recept možeš uvijek poslati linkom, bez koda.
+Create an OAuth client in [Google Cloud Console](https://console.cloud.google.com/apis/credentials). Add these authorized redirect URIs:
 
-Ako aplikaciju objaviš na Vercelu, kod kućanstva neće trajno pamtiti podatke (serverless nema trajnu datoteku). Link za jedan recept i dalje radi.
+- `http://127.0.0.1:43147/api/auth/callback/google`
+- `https://YOUR_DOMAIN/api/auth/callback/google`
 
-## Tehnologija
+Then set:
 
-Next.js, TypeScript, Tailwind CSS i shadcn/ui. Nema prijave ni baze — namjerno, da se može odmah koristiti.
+```
+AUTH_SECRET=
+AUTH_URL=http://127.0.0.1:43147
+AUTH_GOOGLE_ID=
+AUTH_GOOGLE_SECRET=
+```
+
+Until those keys are set, the sign-in page asks for the Google email you use at home so you can still open the app.
+
+## Deploy
+
+This is a Next.js app and can go on Vercel. Add the same environment variables there. Recipe files live on the server disk in this project; on Vercel that storage is not permanent, so a later database would be the next step for a long-lived shared kitchen.

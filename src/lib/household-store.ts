@@ -35,7 +35,7 @@ export async function readHousehold(code: string): Promise<HouseholdPayload | nu
 export async function writeHousehold(code: string, recipes: Recipe[]) {
   const clean = normalizeCode(code);
   if (clean.length < 4) {
-    throw new Error("Kod kućanstva je prekratak.");
+    throw new Error("That kitchen code is too short.");
   }
   await mkdir(DATA_DIR, { recursive: true });
   const payload: HouseholdPayload = {

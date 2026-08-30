@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
+import { ImageIcon } from "@phosphor-icons/react";
 import { DIFFICULTY_OPTIONS, PACE_OPTIONS } from "@/lib/tags";
 import type { RecipeDraft } from "@/lib/draft";
+import { readImageFile } from "@/lib/read-image";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -16,6 +19,7 @@ export function RecipeForm({
   draft: RecipeDraft;
   onChange: (next: RecipeDraft) => void;
 }) {
+  const [imageError, setImageError] = useState("");
   const set = <K extends keyof RecipeDraft>(key: K, value: RecipeDraft[K]) =>
     onChange({ ...draft, [key]: value });
 
@@ -23,18 +27,18 @@ export function RecipeForm({
     <div className="space-y-8">
       <section className="space-y-3">
         <Label htmlFor="title" className="text-sm">
-          Naziv recepta
+          Recipe name
         </Label>
         <Input
           id="title"
           value={draft.title}
           onChange={(event) => set("title", event.target.value)}
-          placeholder="npr. Piletina iz pećnice"
+          placeholder="e.g. Roast chicken"
           className="h-11 rounded-xl text-base"
         />
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="servings">Za koliko porcija je recept</Label>
+            <Label htmlFor="servings">Servings in the original</Label>
             <Input
               id="servings"
               type="number"
@@ -45,7 +49,7 @@ export function RecipeForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="source">Izvorni link (nije obavezno)</Label>
+            <Label htmlFor="source">Source link (optional)</Label>
             <Input
               id="source"
               value={draft.sourceUrl}
@@ -58,12 +62,88 @@ export function RecipeForm({
       </section>
 
       <section className="space-y-3">
+        <p className="text-sm font-medium">Photo</p>
+        <p className="text-muted-foreground text-sm">
+          Pulled from the link when possible. You can replace it with your own.
+        </p>
+        <div className="overflow-hidden rounded-3xl border border-border bg-card">
+          {draft.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={draft.imageUrl} alt="" className="h-52 w-full object-cover" />
+          ) : (
+            <div className="text-muted-foreground flex h-40 items-center justify-center gap-2">
+              <ImageIcon className="size-5" />
+              No photo yet
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2 p-3">
+            <label className="inline-flex cursor-pointer items-center rounded-full border border-border px-3 py-1.5 text-sm">
+              Upload a photo
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  void readImageFile(file)
+                    .then((url) => {
+                      setImageError("");
+                      set("imageUrl", url);
+                    })
+                    .catch((error: unknown) => {
+                      setImageError(error instanceof Error ? error.message : "Upload failed.");
+                    });
+                }}
+              />
+            </label>
+            {draft.imageUrl ? (
+              <button
+                type="button"
+                className="rounded-full px-3 py-1.5 text-sm text-destructive"
+                onClick={() => set("imageUrl", "")}
+              >
+                Remove photo
+              </button>
+            ) : null}
+          </div>
+        </div>
+        {imageError ? <p className="text-destructive text-sm">{imageError}</p> : null}
+      </section>
+
+      <section className="space-y-3">
+        <p className="text-sm font-medium">Save to</p>
+        <div className="grid grid-cols-2 gap-2">
+          {(["keeper", "wishlist"] as const).map((list) => (
+            <button
+              key={list}
+              type="button"
+              onClick={() => set("list", list)}
+              className={cn(
+                "rounded-2xl border px-3 py-2.5 text-left",
+                draft.list === list ? "border-primary bg-primary/8" : "border-border bg-card",
+              )}
+            >
+              <span className="block text-sm font-medium">
+                {list === "keeper" ? "Keepers" : "Wishlist"}
+              </span>
+              <span className="text-muted-foreground text-xs">
+                {list === "keeper"
+                  ? "We make this. It stays."
+                  : "Want to try this later."}
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
         <div>
           <Label htmlFor="ingredients" className="text-sm">
-            Sastojci
+            Ingredients
           </Label>
           <p className="text-muted-foreground mt-1 text-sm">
-            Jedan sastojak po retku, s količinom. Npr. <em>200 g brašna</em>
+            One ingredient per line, with the amount. e.g. <em>200 g flour</em>
           </p>
         </div>
         <Textarea
@@ -77,7 +157,7 @@ export function RecipeForm({
 
       <section className="space-y-3">
         <Label htmlFor="instructions" className="text-sm">
-          Upute
+          Method
         </Label>
         <Textarea
           id="instructions"
@@ -85,15 +165,15 @@ export function RecipeForm({
           onChange={(event) => set("instructionsText", event.target.value)}
           rows={8}
           className="min-h-40 rounded-xl text-base"
-          placeholder="Svaki korak u novi red."
+          placeholder="One step per line."
         />
       </section>
 
       <section className="space-y-3">
         <div>
-          <p className="text-sm font-medium">Tagovi</p>
+          <p className="text-sm font-medium">Tags</p>
           <p className="text-muted-foreground text-sm">
-            Poklikaj sve što odgovara — meso, obrok, slastice…
+            Tap everything that fits — meat, meal, dessert…
           </p>
         </div>
         <TagPicker value={draft.tags} onChange={(tags) => set("tags", tags)} />
@@ -101,7 +181,7 @@ export function RecipeForm({
 
       <section className="grid gap-6 sm:grid-cols-2">
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium">Težina</legend>
+          <legend className="text-sm font-medium">Difficulty</legend>
           <div className="grid gap-2">
             {DIFFICULTY_OPTIONS.map((option) => (
               <button
@@ -122,7 +202,7 @@ export function RecipeForm({
           </div>
         </fieldset>
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium">Trajanje</legend>
+          <legend className="text-sm font-medium">Pace</legend>
           <div className="grid gap-2">
             {PACE_OPTIONS.map((option) => (
               <button
@@ -152,11 +232,9 @@ export function RecipeForm({
             className="mt-0.5 rounded-md"
           />
           <span>
-            <span className="block text-sm font-medium">
-              Najbolje sljedeći dan
-            </span>
+            <span className="block text-sm font-medium">Best the next day</span>
             <span className="text-muted-foreground text-sm">
-              Označi ako se mora dugo hladiti, odležati ili nije za jelo isti dan.
+              Mark this if it needs a long chill, a rest, or should not be eaten the same day.
             </span>
           </span>
         </label>
@@ -164,19 +242,22 @@ export function RecipeForm({
           <Textarea
             value={draft.nextDayNote}
             onChange={(event) => set("nextDayNote", event.target.value)}
-            placeholder="npr. Mora stajati u hladnjaku preko noći."
+            placeholder="e.g. Must sit in the fridge overnight."
             className="rounded-xl text-base"
           />
         ) : null}
       </section>
 
       <section className="space-y-2">
-        <Label htmlFor="notes">Tvoje bilješke</Label>
+        <Label htmlFor="notes">What I changed</Label>
+        <p className="text-muted-foreground text-sm">
+          The tweaks you made while cooking — swaps, extra lemon, less salt.
+        </p>
         <Textarea
           id="notes"
           value={draft.notes}
           onChange={(event) => set("notes", event.target.value)}
-          placeholder="Što si promijenila, što partner voli, zamjene…"
+          placeholder="I used oat milk. Added more garlic. Skipped the sugar."
           className="rounded-xl text-base"
         />
       </section>

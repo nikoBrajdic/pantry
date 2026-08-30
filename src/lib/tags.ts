@@ -1,47 +1,47 @@
 import type { Difficulty, Pace } from "./types";
 
 export const RECIPE_TAGS = [
-  { id: "piletina", label: "Piletina" },
-  { id: "govedina", label: "Govedina" },
-  { id: "svinjetina", label: "Svinjetina" },
-  { id: "janjetina", label: "Janjetina" },
-  { id: "riba", label: "Riba" },
-  { id: "morski-plodovi", label: "Morski plodovi" },
-  { id: "vegetarijansko", label: "Vegetarijansko" },
-  { id: "vegansko", label: "Vegansko" },
-  { id: "bez-glutena", label: "Bez glutena" },
-  { id: "dorucak", label: "Doručak" },
-  { id: "rucak", label: "Ručak" },
-  { id: "vecera", label: "Večera" },
-  { id: "uzina", label: "Užina" },
-  { id: "desert", label: "Desert" },
-  { id: "kruh", label: "Kruh" },
-  { id: "pecivo", label: "Pecivo" },
-  { id: "pica", label: "Pića" },
-  { id: "tjestenina", label: "Tjestenina" },
-  { id: "riza", label: "Riža" },
-  { id: "juha", label: "Juha" },
-  { id: "salata", label: "Salata" },
-  { id: "povrce", label: "Povrće" },
-  { id: "pecnica", label: "Pećnica" },
+  { id: "chicken", label: "Chicken" },
+  { id: "beef", label: "Beef" },
+  { id: "pork", label: "Pork" },
+  { id: "lamb", label: "Lamb" },
+  { id: "fish", label: "Fish" },
+  { id: "seafood", label: "Seafood" },
+  { id: "vegetarian", label: "Vegetarian" },
+  { id: "vegan", label: "Vegan" },
+  { id: "gluten-free", label: "Gluten-free" },
+  { id: "breakfast", label: "Breakfast" },
+  { id: "lunch", label: "Lunch" },
+  { id: "dinner", label: "Dinner" },
+  { id: "snack", label: "Snack" },
+  { id: "dessert", label: "Dessert" },
+  { id: "bread", label: "Bread" },
+  { id: "pastry", label: "Pastry" },
+  { id: "drinks", label: "Drinks" },
+  { id: "pasta", label: "Pasta" },
+  { id: "rice", label: "Rice" },
+  { id: "soup", label: "Soup" },
+  { id: "salad", label: "Salad" },
+  { id: "vegetables", label: "Vegetables" },
+  { id: "oven", label: "Oven" },
   { id: "grill", label: "Grill" },
-  { id: "jedan-lonac", label: "Jedan lonac" },
+  { id: "one-pot", label: "One pot" },
   { id: "meal-prep", label: "Meal prep" },
-  { id: "ljuto", label: "Ljuto" },
-  { id: "utesna", label: "Utešna hrana" },
+  { id: "spicy", label: "Spicy" },
+  { id: "comfort", label: "Comfort food" },
 ] as const;
 
 export type TagId = (typeof RECIPE_TAGS)[number]["id"];
 
 export const DIFFICULTY_OPTIONS: { id: Difficulty; label: string; hint: string }[] = [
-  { id: "easy", label: "Lako", hint: "Malo koraka, teško pogriješiti" },
-  { id: "moderate", label: "Srednje", hint: "Treba malo pažnje ili vremena" },
-  { id: "complicated", label: "Komplicirano", hint: "Više tehnika ili duga priprema" },
+  { id: "easy", label: "Easy", hint: "Few steps, hard to mess up" },
+  { id: "moderate", label: "Moderate", hint: "Needs a bit of care or time" },
+  { id: "complicated", label: "Complicated", hint: "More technique or a long prep" },
 ];
 
 export const PACE_OPTIONS: { id: Pace; label: string; hint: string }[] = [
-  { id: "quick", label: "Brzo", hint: "Otprilike do 35 minuta" },
-  { id: "time-consuming", label: "Dugo traje", hint: "Sporo kuhanje, dizanje, hlađenje…" },
+  { id: "quick", label: "Quick", hint: "About 35 minutes or less" },
+  { id: "time-consuming", label: "Time-consuming", hint: "Slow cooking, rising, chilling…" },
 ];
 
 export function tagLabel(id: string) {

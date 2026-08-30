@@ -1,6 +1,6 @@
 import { parseIngredientList } from "./ingredients";
 import { newId } from "./storage";
-import type { Difficulty, ExtractedRecipe, Pace, Recipe } from "./types";
+import type { Difficulty, ExtractedRecipe, Pace, Recipe, RecipeList } from "./types";
 
 export type RecipeDraft = {
   id?: string;
@@ -16,6 +16,7 @@ export type RecipeDraft = {
   nextDay: boolean;
   nextDayNote: string;
   notes: string;
+  list: RecipeList;
 };
 
 export function emptyDraft(): RecipeDraft {
@@ -32,6 +33,7 @@ export function emptyDraft(): RecipeDraft {
     nextDay: false,
     nextDayNote: "",
     notes: "",
+    list: "wishlist",
   };
 }
 
@@ -63,6 +65,7 @@ export function draftFromRecipe(recipe: Recipe): RecipeDraft {
     nextDay: recipe.nextDay,
     nextDayNote: recipe.nextDayNote ?? "",
     notes: recipe.notes ?? "",
+    list: recipe.list ?? "wishlist",
   };
 }
 
@@ -70,7 +73,7 @@ export function recipeFromDraft(draft: RecipeDraft, existing?: Recipe): Recipe {
   const now = new Date().toISOString();
   return {
     id: draft.id ?? existing?.id ?? newId(),
-    title: draft.title.trim() || "Recept bez naslova",
+    title: draft.title.trim() || "Untitled recipe",
     sourceUrl: draft.sourceUrl.trim() || undefined,
     imageUrl: draft.imageUrl.trim() || undefined,
     servings: Math.max(1, Number(draft.servings) || 1),
@@ -85,6 +88,9 @@ export function recipeFromDraft(draft: RecipeDraft, existing?: Recipe): Recipe {
     nextDay: draft.nextDay,
     nextDayNote: draft.nextDayNote.trim() || undefined,
     notes: draft.notes.trim() || undefined,
+    list: draft.list,
+    timesCooked: existing?.timesCooked ?? 0,
+    lastCookedAt: existing?.lastCookedAt,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
   };

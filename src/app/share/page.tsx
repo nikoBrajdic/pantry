@@ -26,9 +26,9 @@ export default function SharePage() {
     setMessage("");
     try {
       const next = await createHousehold();
-      setMessage(`Kućanstvo je otvoreno. Kod je ${next}. Pošalji ga partneru.`);
+      setMessage(`Shared kitchen is open. The code is ${next}. Send it to your partner.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Nije uspjelo.");
+      setMessage(error instanceof Error ? error.message : "That did not work.");
     } finally {
       setBusy(false);
     }
@@ -39,9 +39,9 @@ export default function SharePage() {
     setMessage("");
     try {
       await joinHousehold(code);
-      setMessage("Ušla si u zajedničku knjižnicu. Recepti su spojeni.");
+      setMessage("You joined the shared library. Recipes are merged.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Kod nije prošao.");
+      setMessage(error instanceof Error ? error.message : "That code did not work.");
     } finally {
       setBusy(false);
     }
@@ -49,18 +49,17 @@ export default function SharePage() {
 
   async function copyCode() {
     await navigator.clipboard.writeText(household);
-    setMessage("Kod je kopiran.");
+    setMessage("Code copied.");
   }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <p className="text-primary text-sm font-medium">Zajednička knjižnica</p>
-        <h1 className="font-heading text-4xl tracking-tight">Podijeli s partnerom</h1>
+        <p className="text-primary text-sm font-medium">Shared kitchen</p>
+        <h1 className="font-heading text-4xl tracking-tight">Share with your partner</h1>
         <p className="text-muted-foreground mt-2 text-base">
-          Napravi kućanstvo i pošalji kod. Partner ga upiše na ovom istom mjestu
-          i od tada vidite iste recepte. Možeš i poslati jedan recept s njegove
-          stranice gumbom „Pošalji recept“.
+          Both of you sign in, then one person opens a kitchen and sends the code.
+          You can also send a single recipe from its page with “Send recipe”.
         </p>
       </div>
 
@@ -71,58 +70,57 @@ export default function SharePage() {
               <UsersThreeIcon className="size-5" />
             </span>
             <div>
-              <p className="text-sm font-medium">Aktivno kućanstvo</p>
+              <p className="text-sm font-medium">Active kitchen</p>
               <p className="font-heading text-3xl tracking-wide">{household}</p>
               <p className="text-muted-foreground mt-1 text-sm">
-                {recipes.length} recepata ·{" "}
+                {recipes.length} recipes ·{" "}
                 {syncState === "saving"
-                  ? "sprema se…"
+                  ? "saving…"
                   : syncState === "error"
-                    ? "sinkronizacija nije uspjela, recepti su i dalje kod tebe"
-                    : "povezano"}
+                    ? "sync failed — recipes are still on your account"
+                    : "connected"}
               </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button className="rounded-full" onClick={() => void copyCode()}>
               <CopyIcon />
-              Kopiraj kod
+              Copy code
             </Button>
             <Button
               variant="outline"
               className="rounded-full"
               onClick={() => void refreshHousehold()}
             >
-              Osvježi od partnera
+              Refresh from partner
             </Button>
             <Button variant="ghost" className="rounded-full" onClick={leaveHousehold}>
-              Prestani dijeliti
+              Stop sharing
             </Button>
           </div>
         </section>
       ) : (
         <div className="grid gap-4">
           <section className="space-y-3 rounded-3xl border border-border bg-card p-5">
-            <h2 className="font-heading text-2xl">Otvori novo kućanstvo</h2>
+            <h2 className="font-heading text-2xl">Open a new kitchen</h2>
             <p className="text-muted-foreground text-sm">
-              Dobiješ kratki kod. Tvoji trenutni recepti postaju početna
-              zajednička knjižnica.
+              You get a short code. Your current recipes become the shared starting library.
             </p>
             <Button className="h-11 rounded-full px-4" disabled={busy} onClick={() => void create()}>
-              Napravi kod za dvoje
+              Make a code for two
             </Button>
           </section>
 
           <section className="space-y-3 rounded-3xl border border-border bg-card p-5">
-            <h2 className="font-heading text-2xl">Imam kod</h2>
+            <h2 className="font-heading text-2xl">I have a code</h2>
             <p className="text-muted-foreground text-sm">
-              Upiši kod koji ti je partner poslao. Knjižnice se spoje.
+              Enter the code your partner sent. The libraries merge.
             </p>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input
                 value={code}
                 onChange={(event) => setCode(event.target.value.toUpperCase())}
-                placeholder="npr. K7F3M2"
+                placeholder="e.g. K7F3M2"
                 className="h-11 rounded-xl text-base tracking-widest"
               />
               <Button
@@ -130,7 +128,7 @@ export default function SharePage() {
                 disabled={busy || code.trim().length < 4}
                 onClick={() => void join()}
               >
-                Pridruži se
+                Join
               </Button>
             </div>
           </section>
@@ -139,16 +137,10 @@ export default function SharePage() {
 
       {message ? (
         <Alert className="rounded-2xl">
-          <AlertTitle>Gotovo</AlertTitle>
+          <AlertTitle>Done</AlertTitle>
           <AlertDescription>{message}</AlertDescription>
         </Alert>
       ) : null}
-
-      <p className="text-muted-foreground text-sm">
-        Recepti se čuvaju na ovom uređaju. Zajednički kod radi dok aplikacija
-        radi na istom poslužitelju. Jedan recept uvijek možeš poslati linkom,
-        bez koda.
-      </p>
     </div>
   );
 }

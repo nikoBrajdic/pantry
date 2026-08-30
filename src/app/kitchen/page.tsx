@@ -18,16 +18,16 @@ export default function KitchenPage() {
     [recipes, submitted],
   );
 
-  if (!ready) return <p className="text-muted-foreground">Učitavam knjižnicu…</p>;
+  if (!ready) return <p className="text-muted-foreground">Loading your library…</p>;
 
   return (
     <div className="space-y-6">
       <div className="max-w-2xl">
-        <p className="text-primary text-sm font-medium">Frižider i ormar</p>
-        <h1 className="font-heading text-4xl tracking-tight">Što imam u kući?</h1>
+        <p className="text-primary text-sm font-medium">Fridge and cupboard</p>
+        <h1 className="font-heading text-4xl tracking-tight">What do I have?</h1>
         <p className="text-muted-foreground mt-2 text-base">
-          Upiši što imaš — piletina, jaja, brašno, rajčica… Aplikacija pregleda
-          spremljene recepte i pokaže koji najbolje odgovaraju.
+          Type what is in the house — chicken, eggs, flour, tomatoes… The app ranks
+          saved recipes by how well they fit.
         </p>
       </div>
 
@@ -39,33 +39,33 @@ export default function KitchenPage() {
         }}
       >
         <label htmlFor="pantry" className="text-sm font-medium">
-          Sastojci koje imaš
+          Ingredients you have
         </label>
         <Textarea
           id="pantry"
           value={pantry}
           onChange={(event) => setPantry(event.target.value)}
-          placeholder="piletina, paprika, jaja, brašno, mlijeko"
+          placeholder="chicken, peppers, eggs, flour, milk"
           className="min-h-28 rounded-xl text-base"
         />
         <Button type="submit" className="h-11 rounded-full px-4 text-sm">
-          Nađi recepte
+          Find recipes
         </Button>
       </form>
 
       {!submitted ? (
         <p className="text-muted-foreground max-w-xl text-sm">
-          Primjer: <em>piletina, paprika, luk, jaja, brašno</em>
+          Example: <em>chicken, peppers, onion, eggs, flour</em>
         </p>
       ) : matches.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-border bg-card/70 px-6 py-12 text-center">
-          <h2 className="font-heading text-2xl">Nijedan spremljeni recept ne sjeda</h2>
+          <h2 className="font-heading text-2xl">No saved recipe quite fits</h2>
           <p className="text-muted-foreground mx-auto mt-2 max-w-md">
-            Dodaj još recepata ili proširi popis. Traži se samo po onome što je već
-            u knjižnici.
+            Add more recipes or widen the list. This only searches what is already
+            in your library.
           </p>
-          <Button render={<Link href="/dodaj" />} className="mt-4 rounded-full">
-            Dodaj recept
+          <Button render={<Link href="/add" />} className="mt-4 rounded-full">
+            Add a recipe
           </Button>
         </div>
       ) : (
@@ -77,16 +77,16 @@ export default function KitchenPage() {
               extra={
                 <div className="space-y-1 text-sm">
                   <p className="font-medium text-primary">
-                    {Math.round(match.score * 100)}% poklapanje · imaš {match.matched.length} od{" "}
+                    {Math.round(match.score * 100)}% match · you have {match.matched.length} of{" "}
                     {match.recipe.ingredients.length}
                   </p>
                   {match.missing.length > 0 ? (
                     <p className="text-muted-foreground">
-                      Nedostaje: {match.missing.slice(0, 4).join(", ")}
+                      Missing: {match.missing.slice(0, 4).join(", ")}
                       {match.missing.length > 4 ? "…" : ""}
                     </p>
                   ) : (
-                    <p className="text-muted-foreground">Imaš sve sastojke.</p>
+                    <p className="text-muted-foreground">You have everything.</p>
                   )}
                 </div>
               }

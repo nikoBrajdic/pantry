@@ -2,26 +2,32 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 import {
   CookingPotIcon,
   HouseIcon,
   MagnifyingGlassIcon,
   PlusCircleIcon,
+  SignOutIcon,
   UsersThreeIcon,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
-import { useRecipes } from "./recipe-provider";
+import { Button } from "@/components/ui/button";
 
 const LINKS = [
-  { href: "/", label: "Knjižnica", icon: HouseIcon },
-  { href: "/dodaj", label: "Dodaj", icon: PlusCircleIcon },
-  { href: "/kuhinja", label: "Što imam", icon: MagnifyingGlassIcon },
-  { href: "/dijeli", label: "Podijeli", icon: UsersThreeIcon },
+  { href: "/", label: "Library", icon: HouseIcon },
+  { href: "/add", label: "Add", icon: PlusCircleIcon },
+  { href: "/kitchen", label: "What's in", icon: MagnifyingGlassIcon },
+  { href: "/share", label: "Share", icon: UsersThreeIcon },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { household } = useRecipes();
+  const { data } = useSession();
+
+  if (pathname === "/login") {
+    return <>{children}</>;
+  }
 
   return (
     <div className="flex min-h-full flex-col">
@@ -34,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="leading-tight">
               <span className="font-heading block text-lg tracking-tight">Receptoteka</span>
               <span className="text-muted-foreground hidden text-xs sm:block">
-                Zalijepi link. Dobiješ sastojke, porcije i upute.
+                Paste a link. Keep the recipe. Cook it again.
               </span>
             </span>
           </Link>
@@ -59,11 +65,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
-          {household ? (
-            <p className="text-muted-foreground hidden text-xs lg:block">
-              Kućanstvo <span className="font-medium text-foreground">{household}</span>
-            </p>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {data?.user?.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={data.user.image}
+                alt=""
+                className="size-8 rounded-full object-cover"
+              />
+            ) : null}
+            <span className="text-muted-foreground hidden max-w-36 truncate text-xs lg:block">
+              {data?.user?.name ?? data?.user?.email}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full"
+              onClick={() => void signOut({ callbackUrl: "/login" })}
+            >
+              <SignOutIcon />
+              Sign out
+            </Button>
+          </div>
         </div>
       </header>
 

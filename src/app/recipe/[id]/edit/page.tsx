@@ -21,13 +21,13 @@ export default function EditRecipePage({
   const draft =
     recipe && edited?.id === recipe.id ? edited : recipe ? draftFromRecipe(recipe) : null;
 
-  if (!ready) return <p className="text-muted-foreground">Učitavam…</p>;
+  if (!ready) return <p className="text-muted-foreground">Loading…</p>;
   if (!recipe || !draft) {
     return (
       <div>
-        <p>Recept nije pronađen.</p>
+        <p>Recipe not found.</p>
         <Button render={<Link href="/" />} className="mt-3 rounded-full">
-          Natrag
+          Back
         </Button>
       </div>
     );
@@ -36,10 +36,10 @@ export default function EditRecipePage({
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="font-heading text-4xl tracking-tight">Uredi recept</h1>
+        <h1 className="font-heading text-4xl tracking-tight">Edit recipe</h1>
         <p className="text-muted-foreground mt-2">
-          Ispravi količine, tagove ili upute. Promjene se spremaju u knjižnicu,
-          a ako dijelite kućanstvo — i partneru.
+          Change amounts, the photo, tags, or the note about what you did differently.
+          If you share a kitchen, your partner sees the update too.
         </p>
       </div>
       <RecipeForm draft={draft} onChange={setEdited} />
@@ -48,17 +48,17 @@ export default function EditRecipePage({
           className="h-11 rounded-full px-5 text-sm"
           onClick={() => {
             upsertRecipe(recipeFromDraft(draft, recipe));
-            router.push(`/recept/${recipe.id}`);
+            router.push(`/recipe/${recipe.id}`);
           }}
         >
-          Spremi izmjene
+          Save changes
         </Button>
         <Button
           variant="outline"
           className="h-11 rounded-full px-5 text-sm"
-          render={<Link href={`/recept/${recipe.id}`} />}
+          render={<Link href={`/recipe/${recipe.id}`} />}
         >
-          Odustani
+          Cancel
         </Button>
       </div>
     </div>
