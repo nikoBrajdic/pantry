@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { RecipeCard } from "@/components/recipe-card";
 import { useRecipes } from "@/components/recipe-provider";
+import { ShelfLoading } from "@/components/shelf-loading";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { matchRecipes, parsePantry } from "@/lib/match";
@@ -18,7 +19,7 @@ export default function KitchenPage() {
     [recipes, submitted],
   );
 
-  if (!ready) return <p className="text-muted-foreground">Opening your shelf…</p>;
+  if (!ready) return <ShelfLoading />;
 
   return (
     <div className="space-y-6">

@@ -16,6 +16,7 @@ const UNIT_ALIASES: Record<string, string> = {
   g: "g",
   gr: "g",
   gram: "g",
+  grams: "g",
   grama: "g",
   kg: "kg",
   ml: "ml",
@@ -23,37 +24,48 @@ const UNIT_ALIASES: Record<string, string> = {
   l: "l",
   litra: "l",
   litre: "l",
-  tsp: "žličica",
-  teaspoon: "žličica",
-  teaspoons: "žličica",
-  tbsp: "žlica",
-  tablespoon: "žlica",
-  tablespoons: "žlica",
-  cup: "šalica",
-  cups: "šalica",
+  liter: "l",
+  liters: "l",
+  litres: "l",
+  tsp: "tsp",
+  teaspoon: "tsp",
+  teaspoons: "tsp",
+  tbsp: "tbsp",
+  tablespoon: "tbsp",
+  tablespoons: "tbsp",
+  cup: "cup",
+  cups: "cup",
   oz: "oz",
   lb: "lb",
-  piece: "kom",
-  pieces: "kom",
-  pcs: "kom",
-  kom: "kom",
-  komad: "kom",
-  komada: "kom",
-  zlica: "žlica",
-  zlice: "žlica",
-  zlicica: "žličica",
-  zlicice: "žličica",
-  žlica: "žlica",
-  žlice: "žlica",
-  žličica: "žličica",
-  žličice: "žličica",
-  salica: "šalica",
-  salice: "šalica",
-  šalica: "šalica",
-  šalice: "šalica",
-  prstohvat: "prstohvat",
-  saka: "šaka",
-  šaka: "šaka",
+  piece: "pc",
+  pieces: "pc",
+  pcs: "pc",
+  pc: "pc",
+  // Recognise Croatian spellings from scraped recipes, store as English.
+  kom: "pc",
+  komad: "pc",
+  komada: "pc",
+  zlica: "tbsp",
+  zlice: "tbsp",
+  zlicica: "tsp",
+  zlicice: "tsp",
+  žlica: "tbsp",
+  žlice: "tbsp",
+  žličica: "tsp",
+  žličice: "tsp",
+  salica: "cup",
+  salice: "cup",
+  šalica: "cup",
+  šalice: "cup",
+  prstohvat: "pinch",
+  pinch: "pinch",
+  saka: "handful",
+  šaka: "handful",
+  handful: "handful",
+  ptn: "portion",
+  ptns: "portion",
+  portion: "portion",
+  portions: "portion",
 };
 
 const COMMON_UNITS = Object.keys(UNIT_ALIASES).sort((a, b) => b.length - a.length);
@@ -100,12 +112,15 @@ export function fold(value: string) {
 }
 
 export function parseIngredient(raw: string): Ingredient {
-  const cleaned = raw.replace(/\s+/g, " ").replace(/^[-•\d.)\s]+/, (match) => {
-    return /^\d/.test(match.trim()) ? match.trim() : "";
-  }).trim();
+  // Normalize spaces, then strip list markers only (not amounts like "1 ½").
+  const cleaned = raw
+    .replace(/\s+/g, " ")
+    .replace(/^[-•]+\s*/, "")
+    .replace(/^\d+[.)]\s+/, "")
+    .trim();
 
   const range = cleaned.match(
-    /^(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?|[½¼¾⅓⅔⅛⅜⅝⅞])\s*[-–—]\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?|[½¼¾⅓⅔⅛⅜⅝⅞])\s+(.+)$/
+    /^(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?|[½¼¾⅓⅔⅛⅜⅝⅞])\s*[-–—]\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?|[½¼¾⅓⅔⅛⅜⅝⅞])\s+(.+)$/,
   );
   if (range) {
     const first = parseNumberToken(range[1]);
@@ -113,16 +128,45 @@ export function parseIngredient(raw: string): Ingredient {
     return { ...rest, raw: cleaned, amount: first };
   }
 
-  const match = cleaned.match(
-    /^((?:\d+\s+)?(?:\d+\s*\/\s*\d+|[½¼¾⅓⅔⅛⅜⅝⅞]|\d+(?:[.,]\d+)?))\s*(.*)$/
+  // Prefer whole + unicode fraction ("1 ½" or "1½") before a bare integer.
+  const unicodeMixed = cleaned.match(
+    /^(\d+)\s*([½¼¾⅓⅔⅛⅜⅝⅞])\s*(.*)$/,
   );
+  if (unicodeMixed) {
+    const amount =
+      Number(unicodeMixed[1]) + (UNICODE_FRACTIONS[unicodeMixed[2]] ?? 0);
+    return finishIngredient(cleaned, amount, unicodeMixed[3]);
+  }
 
-  if (!match) {
+  const asciiMixed = cleaned.match(/^(\d+)\s+(\d+)\s*\/\s*(\d+)\s*(.*)$/);
+  if (asciiMixed) {
+    const amount = Number(asciiMixed[1]) + Number(asciiMixed[2]) / Number(asciiMixed[3]);
+    return finishIngredient(cleaned, amount, asciiMixed[4]);
+  }
+
+  const plainFraction = cleaned.match(
+    /^(\d+\s*\/\s*\d+|[½¼¾⅓⅔⅛⅜⅝⅞])\s*(.*)$/,
+  );
+  if (plainFraction) {
+    const amount = parseNumberToken(plainFraction[1]);
+    return finishIngredient(cleaned, amount, plainFraction[2]);
+  }
+
+  const decimal = cleaned.match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
+  if (!decimal) {
     return { raw: cleaned, amount: null, unit: null, name: cleaned || raw.trim() };
   }
 
-  const amount = parseNumberToken(match[1]);
-  let remainder = match[2].trim();
+  const amount = parseNumberToken(decimal[1]);
+  return finishIngredient(cleaned, amount, decimal[2]);
+}
+
+function finishIngredient(
+  cleaned: string,
+  amount: number | null,
+  remainderRaw: string,
+): Ingredient {
+  let remainder = remainderRaw.trim();
   let unit: string | null = null;
 
   for (const candidate of COMMON_UNITS) {
@@ -179,16 +223,24 @@ export function formatAmount(amount: number): string {
   if (Math.abs(rounded - Math.round(rounded)) < 0.01) {
     return `${sign}${Math.round(rounded)}`;
   }
-  return `${sign}${rounded.toString().replace(".", ",")}`;
+  return `${sign}${rounded}`;
 }
 
 export function formatIngredient(ingredient: Ingredient, factor = 1) {
-  if (ingredient.amount == null) {
-    return ingredient.raw || ingredient.name;
+  // Re-parse from raw when present so older bad parses (e.g. "1 ½" → amount 1)
+  // still scale correctly.
+  const parsed =
+    ingredient.raw && ingredient.raw.trim()
+      ? parseIngredient(ingredient.raw)
+      : ingredient;
+
+  if (parsed.amount == null) {
+    return parsed.raw || parsed.name || ingredient.name;
   }
-  const amount = formatAmount(ingredient.amount * factor);
-  const unit = ingredient.unit ? ` ${ingredient.unit}` : "";
-  const name = ingredient.name ? ` ${ingredient.name}` : "";
+  const amount = formatAmount(parsed.amount * factor);
+  const unitLabel = normalizeUnit(parsed.unit) ?? parsed.unit;
+  const unit = unitLabel ? ` ${unitLabel}` : "";
+  const name = parsed.name ? ` ${parsed.name}` : "";
   return `${amount}${unit}${name}`.replace(/\s+/g, " ").trim();
 }
 

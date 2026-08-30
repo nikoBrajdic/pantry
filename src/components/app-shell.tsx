@@ -13,6 +13,9 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/session-provider";
+import { AppearanceSettings } from "@/components/appearance-settings";
+import { useAppearance } from "@/components/appearance-provider";
+import { profileIconSrc } from "@/lib/appearance";
 
 const LINKS = [
   { href: "/", label: "Library", short: "Library", icon: HouseIcon },
@@ -29,9 +32,18 @@ const LINKS = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
-  const avatar = user?.user_metadata?.avatar_url as string | undefined;
+  const { profileIcon } = useAppearance();
+  const accountAvatar = user?.user_metadata?.avatar_url as string | undefined;
+  const avatar = profileIconSrc(profileIcon) ?? accountAvatar;
+  const fullName =
+    (user?.user_metadata?.full_name as string | undefined) ??
+    (user?.user_metadata?.name as string | undefined) ??
+    "";
   const displayName =
-    (user?.user_metadata?.full_name as string | undefined) ?? user?.email ?? "";
+    (user?.user_metadata?.given_name as string | undefined)?.trim() ||
+    fullName.trim().split(/\s+/)[0] ||
+    user?.email?.split("@")[0] ||
+    "";
 
   if (pathname === "/login") {
     return <>{children}</>;
@@ -74,11 +86,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
           <div className="flex items-center gap-2">
+            <AppearanceSettings />
             {avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatar} alt="" className="size-8 rounded-full object-cover" />
+              <img
+                src={avatar}
+                alt=""
+                className="size-14 shrink-0 rounded-full border border-border/60 bg-white object-contain p-1"
+              />
             ) : null}
-            <span className="text-muted-foreground hidden max-w-36 truncate text-xs lg:block">
+            <span className="text-muted-foreground hidden max-w-28 truncate text-xs lg:block">
               {displayName}
             </span>
             <Button

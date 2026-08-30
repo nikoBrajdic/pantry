@@ -22,7 +22,10 @@ export function LoginForm({
     setError("");
     try {
       const supabase = createClient();
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackUrl)}`;
+      // Keep redirectTo exact (no query string) so it matches Supabase allow-list.
+      // Otherwise Auth falls back to Site URL (often production).
+      document.cookie = `pantry_auth_next=${encodeURIComponent(callbackUrl)}; Path=/; Max-Age=600; SameSite=Lax`;
+      const redirectTo = `${window.location.origin}/auth/callback`;
       const { error: signInError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo },
@@ -46,8 +49,8 @@ export function LoginForm({
           </span>
           <h1 className="font-heading text-4xl tracking-tight">Pantry</h1>
           <p className="text-muted-foreground">
-            Sign in with Google so your library stays with you — and your partner can
-            share the same kitchen.
+            Sign in with Google so your library stays with you — and your sous chef can
+            share a kitchen with you.
           </p>
         </div>
 

@@ -12,7 +12,10 @@ export async function GET() {
     return Response.json({ library });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not load recipes.";
-    return Response.json({ error: message }, { status: 401 });
+    const unauthorized =
+      message.toLowerCase().includes("sign in") ||
+      message.toLowerCase().includes("authenticated");
+    return Response.json({ error: message }, { status: unauthorized ? 401 : 500 });
   }
 }
 

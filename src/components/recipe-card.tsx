@@ -17,8 +17,8 @@ export function RecipeCard({
 
   return (
     <Link href={`/recipe/${recipe.id}`} className="block h-full">
-      <Card className="h-full rounded-2xl bg-card ring-border transition-shadow hover:shadow-md">
-        <div className="relative aspect-[16/10] overflow-hidden bg-[color-mix(in_oklch,var(--accent)_70%,var(--primary)_8%)]">
+      <Card className="h-full gap-0 rounded-2xl bg-card pt-0 ring-border transition-shadow hover:shadow-md">
+        <div className="relative aspect-[16/10] overflow-hidden rounded-t-2xl bg-[color-mix(in_oklch,var(--accent)_70%,var(--primary)_8%)]">
           {recipe.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={recipe.imageUrl} alt="" className="h-full w-full object-cover" />
@@ -47,7 +47,7 @@ export function RecipeCard({
             </span>
           ) : null}
         </div>
-        <CardContent className="flex flex-1 flex-col gap-3 pt-1">
+        <CardContent className="flex flex-1 flex-col gap-3 py-(--card-spacing)">
           <div>
             <h2 className="font-heading text-xl leading-tight">{recipe.title}</h2>
             <p className="text-muted-foreground mt-1 text-sm">

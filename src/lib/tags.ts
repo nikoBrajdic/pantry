@@ -33,6 +33,29 @@ export const RECIPE_TAGS = [
 
 export type TagId = (typeof RECIPE_TAGS)[number]["id"];
 
+/** Meal-type filters on the library page. */
+export const MEAL_FILTERS = [
+  { id: "breakfast", label: "Breakfast" },
+  { id: "lunch", label: "Lunch" },
+  { id: "dessert", label: "Dessert" },
+  { id: "drinks", label: "Drinks" },
+] as const;
+
+/** Main ingredient / diet filters on the library page. */
+export const INGREDIENT_FILTERS = [
+  { id: "chicken", label: "Chicken" },
+  { id: "beef", label: "Beef" },
+  { id: "pork", label: "Pork" },
+  { id: "lamb", label: "Lamb" },
+  { id: "fish", label: "Fish" },
+  { id: "seafood", label: "Seafood" },
+  { id: "vegetarian", label: "Vegetarian" },
+  { id: "vegan", label: "Vegan" },
+  { id: "pasta", label: "Pasta" },
+  { id: "rice", label: "Rice" },
+  { id: "vegetables", label: "Vegetables" },
+] as const;
+
 export const DIFFICULTY_OPTIONS: { id: Difficulty; label: string; hint: string }[] = [
   { id: "easy", label: "Easy", hint: "Few steps, hard to mess up" },
   { id: "moderate", label: "Moderate", hint: "Needs a bit of care or time" },

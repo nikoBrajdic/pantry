@@ -1,7 +1,52 @@
 import { parseIngredient } from "./ingredients";
-import type { ExtractedRecipe, Pace } from "./types";
+import type { ExtractedRecipe, Nutrition, Pace } from "./types";
 
 const ISO_DURATION = /P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?/i;
+
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: "&",
+  quot: '"',
+  apos: "'",
+  lt: "<",
+  gt: ">",
+  nbsp: " ",
+  ndash: "-",
+  mdash: "-",
+  hellip: "...",
+  lsquo: "'",
+  rsquo: "'",
+  ldquo: '"',
+  rdquo: '"',
+  bull: "*",
+  middot: "*",
+  times: "x",
+  divide: "/",
+  deg: "deg",
+  frac12: "1/2",
+  frac14: "1/4",
+  frac34: "3/4",
+  trade: "(TM)",
+  copy: "(c)",
+  reg: "(R)",
+  euro: "EUR",
+  pound: "GBP",
+  yen: "JPY",
+};
+
+export function decodeEntities(input: string): string {
+  return input
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => {
+      const code = Number.parseInt(hex, 16);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : "";
+    })
+    .replace(/&#(\d+);/g, (_, dec: string) => {
+      const code = Number(dec);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : "";
+    })
+    .replace(/&([a-zA-Z][a-zA-Z0-9]+);/g, (match, name: string) => {
+      return NAMED_ENTITIES[name.toLowerCase()] ?? match;
+    });
+}
 
 function asArray<T>(value: T | T[] | undefined | null): T[] {
   if (value == null) return [];
@@ -10,7 +55,7 @@ function asArray<T>(value: T | T[] | undefined | null): T[] {
 
 function textOf(value: unknown): string {
   if (value == null) return "";
-  if (typeof value === "string") return value.trim();
+  if (typeof value === "string") return decodeEntities(value).trim();
   if (typeof value === "number") return String(value);
   if (Array.isArray(value)) return value.map(textOf).filter(Boolean).join(" ");
   if (typeof value === "object") {
@@ -71,10 +116,35 @@ function parseDurationMinutes(value: unknown): number | null {
   return null;
 }
 
+function parseNutritionNumber(value: unknown): number | undefined {
+  const text = textOf(value);
+  if (!text) return undefined;
+  const match = text.replace(",", ".").match(/(\d+(?:\.\d+)?)/);
+  if (!match) return undefined;
+  const n = Number(match[1]);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+function parseNutrition(value: unknown): Nutrition | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const node = value as Record<string, unknown>;
+  const nutrition: Nutrition = {
+    calories: parseNutritionNumber(node.calories ?? node.calorie),
+    proteinG: parseNutritionNumber(node.proteinContent),
+    fatG: parseNutritionNumber(node.fatContent),
+    carbsG: parseNutritionNumber(node.carbohydrateContent),
+    fiberG: parseNutritionNumber(node.fiberContent),
+    sugarG: parseNutritionNumber(node.sugarContent),
+    sodiumMg: parseNutritionNumber(node.sodiumContent),
+  };
+  const hasAny = Object.values(nutrition).some((item) => item != null);
+  return hasAny ? nutrition : undefined;
+}
+
 function flattenInstructions(value: unknown): string[] {
   if (value == null) return [];
   if (typeof value === "string") {
-    return value
+    return decodeEntities(value)
       .split(/\r?\n|(?<=\.)\s+(?=[A-ZČĆŽŠĐ])/)
       .map((step) => step.trim())
       .filter((step) => step.length > 1);
@@ -159,16 +229,8 @@ function recipeFromNode(node: Record<string, unknown>, sourceUrl: string): Extra
     ingredients,
     instructions,
     suggestedPace,
+    nutrition: parseNutrition(node.nutrition),
   };
-}
-
-function decodeEntities(html: string) {
-  return html
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
 }
 
 function fallbackFromHtml(html: string, sourceUrl: string): ExtractedRecipe | null {
@@ -217,7 +279,7 @@ export function extractRecipeFromHtml(html: string, sourceUrl: string): Extracte
   const fallback = fallbackFromHtml(html, sourceUrl);
   if (fallback) return fallback;
 
-    throw new Error(
+  throw new Error(
     "That page did not include a structured recipe. Try another link or add it by hand.",
   );
 }

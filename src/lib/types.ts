@@ -9,6 +9,17 @@ export type Ingredient = {
   name: string;
 };
 
+/** Nutrition for the recipe as written (original servings). Scale by servings factor when displaying. */
+export type Nutrition = {
+  calories?: number;
+  proteinG?: number;
+  fatG?: number;
+  carbsG?: number;
+  fiberG?: number;
+  sugarG?: number;
+  sodiumMg?: number;
+};
+
 export type Recipe = {
   id: string;
   title: string;
@@ -23,6 +34,7 @@ export type Recipe = {
   nextDay: boolean;
   nextDayNote?: string;
   notes?: string;
+  nutrition?: Nutrition;
   list: RecipeList;
   timesCooked: number;
   lastCookedAt?: string;
@@ -38,17 +50,20 @@ export type ExtractedRecipe = {
   ingredients: Ingredient[];
   instructions: string[];
   suggestedPace?: Pace;
+  nutrition?: Nutrition;
 };
 
 export type HouseholdPayload = {
   code: string;
   recipes: Recipe[];
   updatedAt: string;
+  memberCount?: number;
 };
 
 export type UserLibrary = {
   email: string;
   householdCode: string;
+  householdCodes: string[];
   recipes: Recipe[];
   updatedAt: string;
 };

@@ -63,7 +63,7 @@ export function RecipeScaler({
             <MinusIcon />
           </Button>
           <div className="min-w-16 text-center">
-            <p className="font-heading text-3xl">{formatAmount(scale.shownServings)}</p>
+            <p className="font-numeric text-3xl">{formatAmount(scale.shownServings)}</p>
             <p className="text-muted-foreground text-xs">servings</p>
           </div>
           <Button
@@ -96,11 +96,17 @@ export function RecipeScaler({
               id="have-ing"
               value={scale.haveId}
               onChange={(event) => scale.setHaveId(event.target.value)}
-              className="border-input h-11 w-full rounded-xl border bg-transparent px-3 text-sm"
+              className="border-input bg-background text-foreground h-11 w-full rounded-xl border px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50 dark:bg-input/30"
             >
-              <option value="">Choose an ingredient</option>
+              <option value="" className="bg-background text-foreground">
+                Choose an ingredient
+              </option>
               {scale.scalable.map((item) => (
-                <option key={item.raw || item.name} value={item.raw || item.name}>
+                <option
+                  key={item.raw || item.name}
+                  value={item.raw || item.name}
+                  className="bg-background text-foreground"
+                >
                   {item.name} {item.unit ? `(${item.unit})` : ""}
                 </option>
               ))}

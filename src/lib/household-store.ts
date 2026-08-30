@@ -28,10 +28,16 @@ export async function readHousehold(code: string): Promise<HouseholdPayload | nu
 
   if (error || !data) return null;
 
+  const { count, error: countError } = await supabase
+    .from("household_members")
+    .select("*", { count: "exact", head: true })
+    .eq("household_code", clean);
+
   return {
     code: data.code,
     recipes: ((data.recipes ?? []) as Recipe[]).map(normalizeRecipe),
     updatedAt: data.updated_at,
+    memberCount: countError ? undefined : (count ?? undefined),
   };
 }
 
@@ -81,4 +87,46 @@ export async function writeHousehold(code: string, recipes: Recipe[]) {
     recipes: (data.recipes as Recipe[]).map(normalizeRecipe),
     updatedAt: data.updated_at,
   } satisfies HouseholdPayload;
+}
+
+export async function listMemberships(userId: string): Promise<string[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("household_members")
+    .select("household_code")
+    .eq("user_id", userId)
+    .order("joined_at", { ascending: true });
+  if (error) {
+    // Table missing until multi-kitchen migration is applied.
+    if (error.message.toLowerCase().includes("household_members")) {
+      return [];
+    }
+    throw new Error(error.message);
+  }
+  return (data ?? []).map((row) => row.household_code as string);
+}
+
+export async function addMembership(userId: string, code: string) {
+  const clean = normalizeCode(code);
+  const supabase = await createClient();
+  const { error } = await supabase.from("household_members").upsert(
+    { household_code: clean, user_id: userId },
+    { onConflict: "household_code,user_id" },
+  );
+  if (error && !error.message.toLowerCase().includes("household_members")) {
+    throw new Error(error.message);
+  }
+}
+
+export async function removeMembership(userId: string, code: string) {
+  const clean = normalizeCode(code);
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("household_members")
+    .delete()
+    .eq("user_id", userId)
+    .eq("household_code", clean);
+  if (error && !error.message.toLowerCase().includes("household_members")) {
+    throw new Error(error.message);
+  }
 }

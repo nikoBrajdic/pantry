@@ -20,6 +20,7 @@ type RecipeContextValue = {
   ready: boolean;
   recipes: Recipe[];
   household: string;
+  households: string[];
   syncState: SyncState;
   upsertRecipe: (recipe: Recipe) => void;
   removeRecipe: (id: string) => void;
@@ -27,7 +28,8 @@ type RecipeContextValue = {
   moveToList: (id: string, list: RecipeList) => void;
   createHousehold: () => Promise<string>;
   joinHousehold: (code: string) => Promise<void>;
-  leaveHousehold: () => void;
+  switchHousehold: (code: string) => Promise<void>;
+  leaveHousehold: (code?: string) => Promise<void>;
   refreshHousehold: () => Promise<void>;
 };
 
@@ -37,10 +39,23 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   const { status } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [household, setHousehold] = useState("");
+  const [households, setHouseholds] = useState<string[]>([]);
   const [ready, setReady] = useState(false);
   const [syncState, setSyncState] = useState<SyncState>("idle");
   const householdRef = useRef("");
   const recipesRef = useRef<Recipe[]>([]);
+
+  const applyLibrary = useCallback(
+    (library: { recipes: Recipe[]; householdCode: string; householdCodes?: string[] }) => {
+      const next = library.recipes.map(normalizeRecipe);
+      recipesRef.current = next;
+      householdRef.current = library.householdCode ?? "";
+      setRecipes(next);
+      setHousehold(library.householdCode ?? "");
+      setHouseholds(library.householdCodes ?? []);
+    },
+    [],
+  );
 
   const persist = useCallback(async (next: Recipe[], code = householdRef.current) => {
     setSyncState("saving");
@@ -57,25 +72,44 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (status === "unauthenticated") {
+      setReady(false);
+      return;
+    }
     if (status !== "authenticated") return;
     let cancelled = false;
     void (async () => {
-      const response = await fetch("/api/recipes");
-      const data = (await response.json()) as {
-        library?: { recipes: Recipe[]; householdCode: string };
-      };
-      if (cancelled || !data.library) return;
-      const next = data.library.recipes.map(normalizeRecipe);
-      recipesRef.current = next;
-      householdRef.current = data.library.householdCode ?? "";
-      setRecipes(next);
-      setHousehold(data.library.householdCode ?? "");
-      setReady(true);
+      try {
+        const response = await fetch("/api/recipes");
+        const data = (await response.json()) as {
+          library?: {
+            recipes: Recipe[];
+            householdCode: string;
+            householdCodes?: string[];
+          };
+          error?: string;
+        };
+        if (cancelled) return;
+        if (!response.ok || !data.library) {
+          console.error("Failed to load recipes", data.error ?? response.status);
+          setReady(true);
+          setSyncState("error");
+          return;
+        }
+        applyLibrary(data.library);
+        setReady(true);
+        setSyncState("ok");
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Failed to load recipes", error);
+        setReady(true);
+        setSyncState("error");
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [status]);
+  }, [applyLibrary, status]);
 
   const apply = useCallback(
     (updater: (prev: Recipe[]) => Recipe[]) => {
@@ -148,42 +182,92 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     });
     const data = (await response.json()) as {
       household?: { code: string; recipes: Recipe[] };
+      library?: {
+        recipes: Recipe[];
+        householdCode: string;
+        householdCodes?: string[];
+      };
       error?: string;
     };
-    if (!response.ok || !data.household) {
+    if (!response.ok || !data.household || !data.library) {
       throw new Error(data.error ?? "Could not open a shared kitchen.");
     }
-    householdRef.current = data.household.code;
-    setHousehold(data.household.code);
+    applyLibrary(data.library);
     setSyncState("ok");
     return data.household.code;
-  }, []);
+  }, [applyLibrary]);
 
-  const joinHousehold = useCallback(async (code: string) => {
-    const response = await fetch("/api/household", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "join", code }),
-    });
-    const data = (await response.json()) as {
-      library?: { recipes: Recipe[]; householdCode: string };
-      error?: string;
-    };
-    if (!response.ok || !data.library) {
-      throw new Error(data.error ?? "That code was not recognised.");
-    }
-    householdRef.current = data.library.householdCode;
-    recipesRef.current = data.library.recipes.map(normalizeRecipe);
-    setHousehold(data.library.householdCode);
-    setRecipes(recipesRef.current);
-    setSyncState("ok");
-  }, []);
+  const joinHousehold = useCallback(
+    async (code: string) => {
+      const response = await fetch("/api/household", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "join", code }),
+      });
+      const data = (await response.json()) as {
+        library?: {
+          recipes: Recipe[];
+          householdCode: string;
+          householdCodes?: string[];
+        };
+        error?: string;
+      };
+      if (!response.ok || !data.library) {
+        throw new Error(data.error ?? "That code was not recognised.");
+      }
+      applyLibrary(data.library);
+      setSyncState("ok");
+    },
+    [applyLibrary],
+  );
 
-  const leaveHousehold = useCallback(() => {
-    householdRef.current = "";
-    setHousehold("");
-    void persist(recipesRef.current, "");
-  }, [persist]);
+  const switchHousehold = useCallback(
+    async (code: string) => {
+      const response = await fetch("/api/household", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "switch", code }),
+      });
+      const data = (await response.json()) as {
+        library?: {
+          recipes: Recipe[];
+          householdCode: string;
+          householdCodes?: string[];
+        };
+        error?: string;
+      };
+      if (!response.ok || !data.library) {
+        throw new Error(data.error ?? "Could not switch kitchen.");
+      }
+      applyLibrary(data.library);
+      setSyncState("ok");
+    },
+    [applyLibrary],
+  );
+
+  const leaveHousehold = useCallback(
+    async (code?: string) => {
+      const response = await fetch("/api/household", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "leave", code: code ?? householdRef.current }),
+      });
+      const data = (await response.json()) as {
+        library?: {
+          recipes: Recipe[];
+          householdCode: string;
+          householdCodes?: string[];
+        };
+        error?: string;
+      };
+      if (!response.ok || !data.library) {
+        throw new Error(data.error ?? "Could not leave kitchen.");
+      }
+      applyLibrary(data.library);
+      setSyncState("ok");
+    },
+    [applyLibrary],
+  );
 
   const refreshHousehold = useCallback(async () => {
     const code = householdRef.current;
@@ -191,7 +275,9 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     const response = await fetch(`/api/household/${code}`);
     const data = (await response.json()) as { household?: { recipes: Recipe[] } };
     if (response.ok && data.household) {
-      const merged = mergeRecipes(recipesRef.current, data.household.recipes).map(normalizeRecipe);
+      const merged = mergeRecipes(recipesRef.current, data.household.recipes).map(
+        normalizeRecipe,
+      );
       recipesRef.current = merged;
       setRecipes(merged);
       setSyncState("ok");
@@ -203,6 +289,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       ready: ready && status === "authenticated",
       recipes,
       household,
+      households,
       syncState,
       upsertRecipe,
       removeRecipe,
@@ -210,6 +297,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       moveToList,
       createHousehold,
       joinHousehold,
+      switchHousehold,
       leaveHousehold,
       refreshHousehold,
     }),
@@ -218,6 +306,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       status,
       recipes,
       household,
+      households,
       syncState,
       upsertRecipe,
       removeRecipe,
@@ -225,6 +314,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       moveToList,
       createHousehold,
       joinHousehold,
+      switchHousehold,
       leaveHousehold,
       refreshHousehold,
     ],

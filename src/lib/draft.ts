@@ -1,6 +1,13 @@
 import { parseIngredientList } from "./ingredients";
 import { newId } from "./storage";
-import type { Difficulty, ExtractedRecipe, Pace, Recipe, RecipeList } from "./types";
+import type {
+  Difficulty,
+  ExtractedRecipe,
+  Nutrition,
+  Pace,
+  Recipe,
+  RecipeList,
+} from "./types";
 
 export type RecipeDraft = {
   id?: string;
@@ -16,6 +23,7 @@ export type RecipeDraft = {
   nextDay: boolean;
   nextDayNote: string;
   notes: string;
+  nutrition?: Nutrition;
   list: RecipeList;
 };
 
@@ -33,6 +41,7 @@ export function emptyDraft(): RecipeDraft {
     nextDay: false,
     nextDayNote: "",
     notes: "",
+    nutrition: undefined,
     list: "wishlist",
   };
 }
@@ -47,6 +56,7 @@ export function draftFromExtracted(extracted: ExtractedRecipe): RecipeDraft {
     ingredientsText: extracted.ingredients.map((item) => item.raw || item.name).join("\n"),
     instructionsText: extracted.instructions.join("\n"),
     pace: extracted.suggestedPace ?? "quick",
+    nutrition: extracted.nutrition,
   };
 }
 
@@ -65,6 +75,7 @@ export function draftFromRecipe(recipe: Recipe): RecipeDraft {
     nextDay: recipe.nextDay,
     nextDayNote: recipe.nextDayNote ?? "",
     notes: recipe.notes ?? "",
+    nutrition: recipe.nutrition,
     list: recipe.list ?? "wishlist",
   };
 }
@@ -88,6 +99,7 @@ export function recipeFromDraft(draft: RecipeDraft, existing?: Recipe): Recipe {
     nextDay: draft.nextDay,
     nextDayNote: draft.nextDayNote.trim() || undefined,
     notes: draft.notes.trim() || undefined,
+    nutrition: draft.nutrition ?? existing?.nutrition,
     list: draft.list,
     timesCooked: existing?.timesCooked ?? 0,
     lastCookedAt: existing?.lastCookedAt,

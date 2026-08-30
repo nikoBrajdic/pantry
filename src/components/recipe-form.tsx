@@ -173,11 +173,42 @@ export function RecipeForm({
         <div>
           <p className="text-sm font-medium">Tags</p>
           <p className="text-muted-foreground text-sm">
-            Tap everything that fits — meat, meal, dessert…
+            Tap everything that fits — or add your own if none apply.
           </p>
         </div>
         <TagPicker value={draft.tags} onChange={(tags) => set("tags", tags)} />
       </section>
+
+      {draft.nutrition &&
+      Object.values(draft.nutrition).some((value) => value != null) ? (
+        <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
+          <p className="text-sm font-medium">Macronutrients from the source</p>
+          <p className="text-muted-foreground text-sm">
+            Saved with the recipe and scaled when you change servings.
+          </p>
+          <ul className="text-muted-foreground grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+            {draft.nutrition.calories != null ? (
+              <li>{draft.nutrition.calories} kcal</li>
+            ) : null}
+            {draft.nutrition.proteinG != null ? (
+              <li>{draft.nutrition.proteinG} g protein</li>
+            ) : null}
+            {draft.nutrition.fatG != null ? <li>{draft.nutrition.fatG} g fat</li> : null}
+            {draft.nutrition.carbsG != null ? (
+              <li>{draft.nutrition.carbsG} g carbs</li>
+            ) : null}
+            {draft.nutrition.fiberG != null ? (
+              <li>{draft.nutrition.fiberG} g fiber</li>
+            ) : null}
+            {draft.nutrition.sugarG != null ? (
+              <li>{draft.nutrition.sugarG} g sugar</li>
+            ) : null}
+            {draft.nutrition.sodiumMg != null ? (
+              <li>{draft.nutrition.sodiumMg} mg sodium</li>
+            ) : null}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="grid gap-6 sm:grid-cols-2">
         <fieldset className="space-y-2">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RecipeForm } from "@/components/recipe-form";
 import { useRecipes } from "@/components/recipe-provider";
+import { ShelfLoading } from "@/components/shelf-loading";
 import { Button } from "@/components/ui/button";
 import { draftFromRecipe, recipeFromDraft, type RecipeDraft } from "@/lib/draft";
 
@@ -21,7 +22,7 @@ export default function EditRecipePage({
   const draft =
     recipe && edited?.id === recipe.id ? edited : recipe ? draftFromRecipe(recipe) : null;
 
-  if (!ready) return <p className="text-muted-foreground">Loading…</p>;
+  if (!ready) return <ShelfLoading label="Loading recipe" />;
   if (!recipe || !draft) {
     return (
       <div>
@@ -39,7 +40,7 @@ export default function EditRecipePage({
         <h1 className="font-heading text-4xl tracking-tight">Edit recipe</h1>
         <p className="text-muted-foreground mt-2">
           Change amounts, the photo, tags, or the note about what you did differently.
-          If you share a kitchen, your partner sees the update too.
+          If you share a kitchen, your sous chefs see the update too.
         </p>
       </div>
       <RecipeForm draft={draft} onChange={setEdited} />

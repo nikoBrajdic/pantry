@@ -4,7 +4,7 @@ A recipe library for two. Paste a link, pull the photo, ingredients, servings, a
 
 ## What you can do
 
-- **Sign in with Google** so the library belongs to you. Your partner signs in too and joins with a kitchen code.
+- **Sign in with Google** so the library belongs to you. Your sous chef signs in too and joins with a kitchen code.
 - **Add from a link** — the photo comes with the page. Replace it with a photo you upload.
 - **Keepers and wishlist** — split “we make this” from “we want to try this”.
 - **Notes** — write what you changed from the original.
@@ -36,9 +36,10 @@ NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-3. In the Supabase SQL editor, run the migration file:
+3. In the Supabase SQL editor, run the migration files in order:
 
-`supabase/migrations/20260330120000_init.sql`
+- `supabase/migrations/20260330120000_init.sql`
+- `supabase/migrations/20260330130000_multi_kitchens.sql`
 
 ### 2. Google login (via Supabase Auth)
 
