@@ -75,22 +75,22 @@ export const PROFILE_ICONS: {
 
 export const PALETTES: { id: PaletteId; label: string; swatch: string }[] = [
   { id: "sage", label: "Sage", swatch: "oklch(0.42 0.07 155)" },
-  { id: "green", label: "Green", swatch: "oklch(0.45 0.12 142)" },
+  { id: "green", label: "Matcha", swatch: "oklch(0.45 0.12 142)" },
   { id: "mint", label: "Mint", swatch: "oklch(0.82 0.06 165)" },
-  { id: "turquoise", label: "Turquoise", swatch: "oklch(0.55 0.1 195)" },
-  { id: "sky", label: "Sky", swatch: "oklch(0.82 0.06 230)" },
-  { id: "blue", label: "Blue", swatch: "oklch(0.48 0.12 250)" },
+  { id: "turquoise", label: "Sea salt", swatch: "oklch(0.55 0.1 195)" },
+  { id: "sky", label: "Cotton candy", swatch: "oklch(0.82 0.06 230)" },
+  { id: "blue", label: "Blueberry", swatch: "oklch(0.48 0.12 250)" },
   { id: "lilac", label: "Lilac", swatch: "oklch(0.82 0.06 300)" },
   { id: "lavender", label: "Lavender", swatch: "oklch(0.78 0.07 290)" },
-  { id: "purple", label: "Purple", swatch: "oklch(0.48 0.14 300)" },
-  { id: "blush", label: "Blush", swatch: "oklch(0.86 0.05 10)" },
-  { id: "pink", label: "Pink", swatch: "oklch(0.62 0.14 350)" },
+  { id: "purple", label: "Plum", swatch: "oklch(0.48 0.14 300)" },
+  { id: "blush", label: "Rose", swatch: "oklch(0.86 0.05 10)" },
+  { id: "pink", label: "Dragonfruit", swatch: "oklch(0.62 0.14 350)" },
   { id: "peach", label: "Peach", swatch: "oklch(0.86 0.06 50)" },
   { id: "orange", label: "Orange", swatch: "oklch(0.62 0.14 55)" },
   { id: "butter", label: "Butter", swatch: "oklch(0.9 0.07 95)" },
-  { id: "yellow", label: "Yellow", swatch: "oklch(0.72 0.12 95)" },
-  { id: "red", label: "Red", swatch: "oklch(0.48 0.14 25)" },
-  { id: "mist", label: "Mist", swatch: "oklch(0.88 0.02 240)" },
+  { id: "yellow", label: "Lemon", swatch: "oklch(0.72 0.12 95)" },
+  { id: "red", label: "Tomato", swatch: "oklch(0.48 0.14 25)" },
+  { id: "mist", label: "Mochi", swatch: "oklch(0.88 0.02 240)" },
 ];
 
 export function isAppearanceMode(value: string | null): value is AppearanceMode {

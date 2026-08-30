@@ -14,7 +14,10 @@ export async function proxy(request: NextRequest) {
   if (!isSupabaseConfigured()) {
     if (!isPublic && !path.startsWith("/_next")) {
       const login = new URL("/login", request.nextUrl.origin);
-      login.searchParams.set("callbackUrl", path);
+      login.searchParams.set(
+        "callbackUrl",
+        `${path}${request.nextUrl.search}`,
+      );
       return NextResponse.redirect(login);
     }
     return response;
@@ -55,7 +58,10 @@ export async function proxy(request: NextRequest) {
 
   if (!user) {
     const login = new URL("/login", request.nextUrl.origin);
-    login.searchParams.set("callbackUrl", path);
+    login.searchParams.set(
+      "callbackUrl",
+      `${path}${request.nextUrl.search}`,
+    );
     return NextResponse.redirect(login);
   }
 

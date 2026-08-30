@@ -64,7 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6">
           <Link href="/" className="flex min-w-0 items-center gap-2.5">
             <span className="grid size-9 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
-              <PantryLogo className="size-6" />
+              <PantryLogo className="size-9" />
             </span>
             <span className="min-w-0 leading-tight">
               <span className="font-heading block text-lg tracking-tight">Pantry</span>

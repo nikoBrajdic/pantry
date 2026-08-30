@@ -24,17 +24,28 @@ create policy "Users delete own memberships"
   on public.household_members for delete to authenticated
   using (auth.uid() = user_id);
 
--- Members of a kitchen can see who else is in it
+-- Members of a kitchen can see who else is in it (via security definer — no RLS recursion)
+create or replace function public.is_household_member(code text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.household_members
+    where user_id = auth.uid()
+      and household_code = code
+  );
+$$;
+
+revoke all on function public.is_household_member(text) from public;
+grant execute on function public.is_household_member(text) to authenticated;
+
 create policy "Members read kitchen roster"
   on public.household_members for select to authenticated
-  using (
-    exists (
-      select 1
-      from public.household_members mine
-      where mine.user_id = auth.uid()
-        and mine.household_code = household_members.household_code
-    )
-  );
+  using (public.is_household_member(household_code));
 
 -- Prefer membership table for kitchen writes
 drop policy if exists "Members can update household" on public.households;
@@ -42,12 +53,7 @@ drop policy if exists "Members can update household" on public.households;
 create policy "Members can update household"
   on public.households for update to authenticated
   using (
-    exists (
-      select 1
-      from public.household_members
-      where household_members.user_id = auth.uid()
-        and household_members.household_code = households.code
-    )
+    public.is_household_member(households.code)
     or exists (
       select 1
       from public.profiles
@@ -56,12 +62,7 @@ create policy "Members can update household"
     )
   )
   with check (
-    exists (
-      select 1
-      from public.household_members
-      where household_members.user_id = auth.uid()
-        and household_members.household_code = households.code
-    )
+    public.is_household_member(households.code)
     or exists (
       select 1
       from public.profiles

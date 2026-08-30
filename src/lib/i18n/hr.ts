@@ -37,7 +37,7 @@ export const hr: Record<MessageKey, string> = {
 
   "login.title": "Pantry",
   "login.blurb":
-    "Prijavi se Googleom da knjižnica ostane s tobom — i da sous chef može dijeliti kuhinju s tobom.",
+    "Keep your chefs close, but your recipes closer.",
   "login.continueGoogle": "Nastavi s Googleom",
   "login.envHint":
     "Dodaj NEXT_PUBLIC_SUPABASE_URL i NEXT_PUBLIC_SUPABASE_ANON_KEY u .env.local, zatim uključi Google pod Authentication → Providers u Supabase projektu.",
@@ -181,7 +181,7 @@ export const hr: Record<MessageKey, string> = {
   "cooking.aria": "Kuham — drži zaslon budnim",
 
   "cook.ingredients": "Sastojci",
-  "cook.ingredientsHint": "Označi svaki dok ideš.",
+  "cook.ingredientsHint": "Označi svaki dok kuhaš.",
   "cook.method": "Postupak",
   "cook.methodHint": "Označi korake kako ih završavaš.",
   "cook.noSteps": "Još nema spremljenih koraka.",
@@ -273,8 +273,16 @@ export const hr: Record<MessageKey, string> = {
   "import.opening": "Otvaram recept…",
   "import.eyebrow": "Pozivnica za recept",
   "import.meta": "{servings} porcija · {ingredients} sastojaka · {steps} koraka",
-  "import.save": "Spremi u moju knjižnicu",
+  "import.save": "Spremi u knjižnicu",
+  "import.saving": "Spremam…",
   "import.skip": "Preskoči",
+  "import.saveTo": "Spremi u",
+  "import.personal": "Osobna polica",
+  "import.kitchen": "Kuhinja {code}",
+  "import.ingredients": "Sastojci",
+  "import.method": "Postupak",
+  "import.notes": "Što su promijenili",
+  "import.nextDay": "Najbolje sljedeći dan",
 
   "difficulty.easy": "Lako",
   "difficulty.easyHint": "Malo koraka, teško zabrljati",

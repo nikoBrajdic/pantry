@@ -35,7 +35,7 @@ export const en = {
 
   "login.title": "Pantry",
   "login.blurb":
-    "Sign in with Google so your library stays with you — and your sous chef can share a kitchen with you.",
+    "Keep your chefs close, but your recipes closer.",
   "login.continueGoogle": "Continue with Google",
   "login.envHint":
     "Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local, then enable Google under Authentication → Providers in your Supabase project.",
@@ -268,8 +268,16 @@ export const en = {
   "import.opening": "Opening recipe…",
   "import.eyebrow": "Recipe invite",
   "import.meta": "{servings} servings · {ingredients} ingredients · {steps} steps",
-  "import.save": "Save to my library",
+  "import.save": "Save to library",
+  "import.saving": "Saving…",
   "import.skip": "Skip",
+  "import.saveTo": "Save to",
+  "import.personal": "Personal shelf",
+  "import.kitchen": "Kitchen {code}",
+  "import.ingredients": "Ingredients",
+  "import.method": "Method",
+  "import.notes": "What they changed",
+  "import.nextDay": "Best the next day",
 
   "difficulty.easy": "Easy",
   "difficulty.easyHint": "Few steps, hard to mess up",

@@ -126,7 +126,7 @@ function RecipeBody({
   const [cooking, setCooking] = useState(false);
 
   async function copyShare() {
-    const url = shareUrlFor(recipe, window.location.origin);
+    const url = await shareUrlFor(recipe, window.location.origin);
     await navigator.clipboard.writeText(url);
     setCopied(true);
   }
