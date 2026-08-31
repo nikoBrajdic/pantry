@@ -68,5 +68,15 @@ export const PACE_OPTIONS: { id: Pace; label: string; hint: string }[] = [
 ];
 
 export function tagLabel(id: string) {
-  return RECIPE_TAGS.find((tag) => tag.id === id)?.label ?? id;
+  return RECIPE_TAGS.find((tag) => tag.id === id)?.label ?? formatTagDisplay(id);
+}
+
+/** Human label for a tag id/slug (always capitalizes the first letter). */
+export function formatTagDisplay(idOrLabel: string) {
+  const asWords = idOrLabel
+    .trim()
+    .replace(/-/g, " ")
+    .replace(/\s+/g, " ");
+  if (!asWords) return idOrLabel;
+  return asWords.charAt(0).toUpperCase() + asWords.slice(1);
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ClockIcon, FireIcon, WarningIcon } from "@phosphor-icons/react";
 import { useLocale } from "@/components/locale-provider";
-import { DIFFICULTY_OPTIONS, PACE_OPTIONS } from "@/lib/tags";
+import { DIFFICULTY_OPTIONS, PACE_OPTIONS, formatTagDisplay } from "@/lib/tags";
 import {
   difficultyMessageKey,
   paceMessageKey,
@@ -76,11 +76,15 @@ export function RecipeCard({
               <ClockIcon className="size-3" />
               {paceKey ? t(paceKey) : pace?.label}
             </Badge>
-            {recipe.tags.slice(0, 3).map((tag) => {
+            {recipe.tags.map((tag) => {
               const key = tagMessageKey(tag);
               return (
-                <Badge key={tag} variant="outline" className="rounded-full">
-                  {key ? t(key) : tag}
+                <Badge
+                  key={tag}
+                  variant="outline"
+                  className="rounded-full leading-none"
+                >
+                  {key ? t(key) : formatTagDisplay(tag)}
                 </Badge>
               );
             })}

@@ -39,7 +39,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { DIFFICULTY_OPTIONS, PACE_OPTIONS } from "@/lib/tags";
+import { DIFFICULTY_OPTIONS, PACE_OPTIONS, formatTagDisplay } from "@/lib/tags";
 import {
   difficultyMessageKey,
   paceMessageKey,
@@ -238,8 +238,12 @@ function RecipeBody({
             {recipe.tags.map((tag) => {
               const key = tagMessageKey(tag);
               return (
-                <Badge key={tag} variant="outline" className="rounded-full">
-                  {key ? t(key) : tag}
+                <Badge
+                  key={tag}
+                  variant="outline"
+                  className="rounded-full leading-none"
+                >
+                  {key ? t(key) : formatTagDisplay(tag)}
                 </Badge>
               );
             })}

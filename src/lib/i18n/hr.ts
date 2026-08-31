@@ -287,7 +287,7 @@ export const hr: Record<MessageKey, string> = {
   "form.pace": "Tempo",
   "form.tags": "Oznake",
   "form.tagsHint":
-    "Pretraži oznake kuhinje, odaberi prijedlog ili stvori novu. Pravopis i razmaci se ujednačuju da nema duplikata.",
+    "Pretraži oznake ili odaberi nedavne. Nove se spremaju u ovu kuhinju za ponovnu upotrebu.",
   "form.nutritionFromSource": "Makronutrijenti s izvora",
   "form.nutritionScaleHint":
     "Spremljeni s receptom i skaliraju se kad mijenjaš porcije.",

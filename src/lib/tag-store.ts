@@ -10,6 +10,10 @@ import { createClient } from "./supabase/server";
 
 export type TagScope = { owner_user_id: string } | { household_code: string };
 
+export type ShelfTagRow = ShelfTag & {
+  lastUsed?: string | null;
+};
+
 type TagRow = {
   row_id: string;
   id: string;
@@ -28,9 +32,14 @@ export function normalizeRecipeTags(recipe: Recipe): Recipe {
   return { ...recipe, tags };
 }
 
-export async function listShelfTags(scope: TagScope): Promise<ShelfTag[]> {
+/** Shelf catalog ordered by most recently assigned. */
+export async function listShelfTags(scope: TagScope): Promise<ShelfTagRow[]> {
   const supabase = await createClient();
-  let query = supabase.from("tags").select("id, label").order("label", { ascending: true });
+  let query = supabase
+    .from("tags")
+    .select("id, label, last_used")
+    .order("last_used", { ascending: false, nullsFirst: false })
+    .order("label", { ascending: true });
   if ("owner_user_id" in scope) {
     query = query.eq("owner_user_id", scope.owner_user_id);
   } else {
@@ -39,20 +48,20 @@ export async function listShelfTags(scope: TagScope): Promise<ShelfTag[]> {
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  const byId = new Map<string, ShelfTag>();
-  for (const tag of RECIPE_TAGS) {
-    byId.set(tag.id, { id: tag.id, label: tag.label });
-  }
-  for (const row of data ?? []) {
-    byId.set(row.id, { id: row.id, label: row.label || row.id });
-  }
-  return [...byId.values()].sort((a, b) => a.label.localeCompare(b.label));
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    label:
+      normalizeTagLabel((row.label as string) || String(row.id).replace(/-/g, " ")) ||
+      String(row.id),
+    lastUsed: (row.last_used as string | null) ?? null,
+  }));
 }
 
 async function ensureTag(
   scope: TagScope,
   slug: string,
   labelHint?: string,
+  usedAt?: string,
 ): Promise<TagRow> {
   const supabase = await createClient();
   let find = supabase.from("tags").select("row_id, id, label").eq("id", slug);
@@ -68,6 +77,7 @@ async function ensureTag(
   const builtin = RECIPE_TAGS.find((tag) => tag.id === slug);
   const label =
     normalizeTagLabel(labelHint || builtin?.label || slug.replace(/-/g, " ")) || slug;
+  const now = usedAt || new Date().toISOString();
 
   const { data, error } = await supabase
     .from("tags")
@@ -76,6 +86,8 @@ async function ensureTag(
       label,
       owner_user_id: "owner_user_id" in scope ? scope.owner_user_id : null,
       household_code: "household_code" in scope ? scope.household_code : null,
+      last_used: now,
+      updated_at: now,
     })
     .select("row_id, id, label")
     .single();
@@ -93,7 +105,7 @@ async function ensureTag(
   return data as TagRow;
 }
 
-/** Upsert catalog entries and rebuild recipe_tags for the given recipe rows. */
+/** Upsert catalog entries, rebuild recipe_tags, bump last_used on assigned tags. */
 export async function syncRecipeTags(
   scope: TagScope,
   recipes: { row_id: string; recipe: Recipe }[],
@@ -110,6 +122,7 @@ export async function syncRecipeTags(
 
   const links: { recipe_row_id: string; tag_row_id: string }[] = [];
   const tagCache = new Map<string, TagRow>();
+  const now = new Date().toISOString();
 
   for (const item of recipes) {
     const normalized = normalizeRecipeTags(normalizeRecipe(item.recipe));
@@ -118,7 +131,12 @@ export async function syncRecipeTags(
       if (!slug) continue;
       let tag = tagCache.get(slug);
       if (!tag) {
-        tag = await ensureTag(scope, slug, raw.includes("-") ? raw.replace(/-/g, " ") : raw);
+        tag = await ensureTag(
+          scope,
+          slug,
+          raw.includes("-") ? raw.replace(/-/g, " ") : raw,
+          now,
+        );
         tagCache.set(slug, tag);
       }
       links.push({ recipe_row_id: item.row_id, tag_row_id: tag.row_id });
@@ -126,6 +144,14 @@ export async function syncRecipeTags(
   }
 
   if (links.length === 0) return;
+
   const { error: linkError } = await supabase.from("recipe_tags").insert(links);
   if (linkError) throw new Error(linkError.message);
+
+  const usedTagIds = [...new Set(links.map((link) => link.tag_row_id))];
+  const { error: touchError } = await supabase
+    .from("tags")
+    .update({ last_used: now, updated_at: now })
+    .in("row_id", usedTagIds);
+  if (touchError) throw new Error(touchError.message);
 }

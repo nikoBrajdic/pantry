@@ -4,7 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { MagnifyingGlassIcon, PlusIcon } from "@phosphor-icons/react";
 import { useLocale } from "@/components/locale-provider";
 import { useRecipes } from "@/components/recipe-provider";
-import { RECIPE_TAGS } from "@/lib/tags";
+import { RECIPE_TAGS, formatTagDisplay } from "@/lib/tags";
 import {
   exactTagMatch,
   normalizeTagLabel,
@@ -17,18 +17,28 @@ import { tagMessageKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 
+const SUGGESTION_LIMIT = 7;
+
 const BUILTIN_TAGS: ShelfTag[] = RECIPE_TAGS.map((tag) => ({
   id: tag.id,
   label: tag.label,
 }));
-const BUILTIN_IDS = new Set(BUILTIN_TAGS.map((tag) => tag.id));
 
 function displayLabel(
   tag: ShelfTag,
   t: (key: MessageKey, values?: Record<string, string | number>) => string,
 ) {
   const key = tagMessageKey(tag.id);
-  return key ? t(key) : tag.label || tag.id;
+  return key ? t(key) : formatTagDisplay(tag.label || tag.id);
+}
+
+function tagFromId(id: string, catalog: ShelfTag[]): ShelfTag {
+  return (
+    catalog.find((tag) => tag.id === id) ?? {
+      id,
+      label: formatTagDisplay(id),
+    }
+  );
 }
 
 export function TagPicker({
@@ -42,8 +52,10 @@ export function TagPicker({
   const { household } = useRecipes();
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
-  /** Custom / shelf tags shown after builtins; never removed on unselect. */
-  const [extraTags, setExtraTags] = useState<ShelfTag[]>([]);
+  /** Shelf tags ordered by last_used (most recent first). */
+  const [shelfTags, setShelfTags] = useState<ShelfTag[]>([]);
+  /** Chips that should stay visible after unselect during this edit. */
+  const [stickyIds, setStickyIds] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -55,14 +67,23 @@ export function TagPicker({
         const response = await fetch("/api/tags");
         const data = (await response.json()) as { tags?: ShelfTag[] };
         if (cancelled || !response.ok || !data.tags) return;
-        const customs = data.tags.filter((tag) => !BUILTIN_IDS.has(tag.id));
-        setExtraTags((prev) => {
-          const seen = new Set(prev.map((tag) => tag.id));
+        const tags = data.tags;
+        setShelfTags(tags);
+        setStickyIds((prev) => {
+          const seen = new Set(prev);
           const next = [...prev];
-          for (const tag of customs) {
+          for (const id of value) {
+            if (seen.has(id)) continue;
+            seen.add(id);
+            next.push(id);
+          }
+          let extraCount = next.filter((id) => !value.includes(id)).length;
+          for (const tag of tags) {
+            if (extraCount >= SUGGESTION_LIMIT) break;
             if (seen.has(tag.id)) continue;
             seen.add(tag.id);
-            next.push(tag);
+            next.push(tag.id);
+            if (!value.includes(tag.id)) extraCount += 1;
           }
           return next;
         });
@@ -73,19 +94,56 @@ export function TagPicker({
     return () => {
       cancelled = true;
     };
+    // Only reload when kitchen changes; value stickiness handled separately
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [household]);
 
-  const cloudTags = useMemo(() => {
-    const extras = [...extraTags];
-    for (const id of value) {
-      if (BUILTIN_IDS.has(id)) continue;
-      if (extras.some((tag) => tag.id === id)) continue;
-      extras.push({ id, label: normalizeTagLabel(id.replace(/-/g, " ")) || id });
-    }
-    return [...BUILTIN_TAGS, ...extras];
-  }, [extraTags, value]);
+  useEffect(() => {
+    setStickyIds((prev) => {
+      const seen = new Set(prev);
+      const next = [...prev];
+      for (const id of value) {
+        if (seen.has(id)) continue;
+        seen.add(id);
+        next.push(id);
+      }
+      return next;
+    });
+  }, [value]);
 
-  const catalog = cloudTags;
+  const catalog = useMemo(() => {
+    const byId = new Map<string, ShelfTag>();
+    for (const tag of BUILTIN_TAGS) byId.set(tag.id, tag);
+    for (const tag of shelfTags) byId.set(tag.id, tag);
+    for (const id of value) {
+      if (!byId.has(id)) byId.set(id, { id, label: formatTagDisplay(id) });
+    }
+    return [...byId.values()];
+  }, [shelfTags, value]);
+
+  const cloudTags = useMemo(() => {
+    const selectedSet = new Set(value);
+    const selected = value.map((id) => tagFromId(id, catalog));
+
+    const extras: ShelfTag[] = [];
+    const extraIds = new Set<string>();
+
+    // Keep chips the user has already seen (e.g. unselected after a change of mind).
+    for (const id of stickyIds) {
+      if (selectedSet.has(id) || extraIds.has(id)) continue;
+      extras.push(tagFromId(id, catalog));
+      extraIds.add(id);
+    }
+
+    for (const tag of shelfTags) {
+      if (extras.length >= SUGGESTION_LIMIT) break;
+      if (selectedSet.has(tag.id) || extraIds.has(tag.id)) continue;
+      extras.push(tag);
+      extraIds.add(tag.id);
+    }
+
+    return [...selected, ...extras.slice(0, SUGGESTION_LIMIT)];
+  }, [catalog, shelfTags, stickyIds, value]);
 
   const suggestions = useMemo(() => {
     return suggestTags(query, catalog, { exclude: value, limit: 8 });
@@ -122,18 +180,22 @@ export function TagPicker({
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, []);
 
-  function ensureInCloud(id: string, label?: string) {
+  function rememberTag(id: string, label?: string) {
     const slug = normalizeTagSlug(id);
-    if (!slug || BUILTIN_IDS.has(slug)) return slug;
-    setExtraTags((prev) => {
+    if (!slug) return slug;
+    setShelfTags((prev) => {
       if (prev.some((tag) => tag.id === slug)) return prev;
-      return [...prev, { id: slug, label: normalizeTagLabel(label || slug) || slug }];
+      return [
+        { id: slug, label: normalizeTagLabel(label || slug) || slug },
+        ...prev,
+      ];
     });
+    setStickyIds((prev) => (prev.includes(slug) ? prev : [...prev, slug]));
     return slug;
   }
 
   function selectTag(id: string, label?: string) {
-    const slug = ensureInCloud(id, label);
+    const slug = rememberTag(id, label);
     if (!slug || value.includes(slug)) return;
     onChange([...value, slug]);
     setQuery("");
@@ -143,6 +205,7 @@ export function TagPicker({
   function toggleTag(id: string) {
     if (value.includes(id)) {
       onChange(value.filter((item) => item !== id));
+      setStickyIds((prev) => [id, ...prev.filter((item) => item !== id)]);
       return;
     }
     selectTag(id);
@@ -253,26 +316,28 @@ export function TagPicker({
         ) : null}
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {cloudTags.map((tag) => {
-          const selected = value.includes(tag.id);
-          return (
-            <button
-              key={tag.id}
-              type="button"
-              onClick={() => toggleTag(tag.id)}
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-sm transition-colors",
-                selected
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-foreground hover:border-primary/40",
-              )}
-            >
-              {displayLabel(tag, t)}
-            </button>
-          );
-        })}
-      </div>
+      {cloudTags.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {cloudTags.map((tag) => {
+            const selected = value.includes(tag.id);
+            return (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={() => toggleTag(tag.id)}
+                className={cn(
+                  "inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-sm leading-none transition-colors",
+                  selected
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-foreground hover:border-primary/40",
+                )}
+              >
+                {displayLabel(tag, t)}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }

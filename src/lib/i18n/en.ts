@@ -282,7 +282,7 @@ export const en = {
   "form.pace": "Pace",
   "form.tags": "Tags",
   "form.tagsHint":
-    "Search your kitchen’s tags, pick a suggestion, or create one. Spelling and spacing are normalized so duplicates don’t pile up.",
+    "Search tags or pick from recent ones. New tags are saved to this kitchen for reuse.",
   "form.nutritionFromSource": "Macronutrients from the source",
   "form.nutritionScaleHint":
     "Saved with the recipe and scaled when you change servings.",
