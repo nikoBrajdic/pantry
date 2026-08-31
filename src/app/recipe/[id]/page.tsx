@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -47,6 +47,22 @@ import {
 } from "@/lib/i18n";
 import { shareUrlFor } from "@/lib/share";
 import { cn } from "@/lib/utils";
+
+const LG_QUERY = "(min-width: 1024px)";
+
+function subscribeLg(onChange: () => void) {
+  const media = window.matchMedia(LG_QUERY);
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+
+function getLgSnapshot() {
+  return window.matchMedia(LG_QUERY).matches;
+}
+
+function getLgServerSnapshot() {
+  return false;
+}
 
 export default function RecipePage({
   params,
@@ -130,6 +146,7 @@ function RecipeBody({
   const [kitchenBusy, setKitchenBusy] = useState(false);
   const [kitchenMessage, setKitchenMessage] = useState("");
   const [cooking, setCooking] = useState(false);
+  const isDesktop = useSyncExternalStore(subscribeLg, getLgSnapshot, getLgServerSnapshot);
 
   const kitchenTargets = [
     ...(household
@@ -162,6 +179,205 @@ function RecipeBody({
     }
   }
 
+  function renderOverview() {
+    return (
+      <div className="overflow-hidden rounded-3xl border border-border bg-card">
+        {recipe.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={recipe.imageUrl} alt="" className="h-56 w-full object-cover sm:h-72" />
+        ) : null}
+        <div className="space-y-4 p-5 sm:p-6">
+          <div>
+            <div className="mb-2 flex flex-wrap gap-2">
+              <Badge className="rounded-full">
+                {recipe.list === "keeper" ? t("recipe.keeper") : t("recipe.wishlist")}
+              </Badge>
+              {recipe.timesCooked > 0 ? (
+                <Badge variant="secondary" className="rounded-full">
+                  <FireIcon className="size-3" />
+                  {recipe.timesCooked === 1
+                    ? t("recipe.cookedOnce", { count: recipe.timesCooked })
+                    : t("recipe.cookedMany", { count: recipe.timesCooked })}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="rounded-full">
+                  {t("recipe.notCooked")}
+                </Badge>
+              )}
+              {recipe.notes?.trim() ? (
+                <a
+                  href="#what-i-changed"
+                  className="inline-flex rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Badge className="rounded-full bg-primary text-primary-foreground hover:opacity-90">
+                    <NotePencilIcon className="size-3.5" weight="fill" />
+                    {t("recipe.tweaked")}
+                  </Badge>
+                </a>
+              ) : null}
+            </div>
+            <h1 className="font-heading text-4xl tracking-tight">{recipe.title}</h1>
+            {recipe.notes?.trim() ? (
+              <a
+                href="#what-i-changed"
+                className="text-primary mt-3 flex items-start gap-2 text-sm font-medium underline-offset-4 hover:underline"
+              >
+                <NotePencilIcon className="mt-0.5 size-4 shrink-0" weight="fill" />
+                <span>{t("recipe.tweakedHint")}</span>
+              </a>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <Badge className="rounded-full">
+              {difficultyKey ? t(difficultyKey) : difficulty?.label}
+            </Badge>
+            <Badge variant="secondary" className="rounded-full">
+              <ClockIcon className="size-3" />
+              {paceKey ? t(paceKey) : pace?.label}
+            </Badge>
+            {recipe.tags.map((tag) => {
+              const key = tagMessageKey(tag);
+              return (
+                <Badge key={tag} variant="outline" className="rounded-full">
+                  {key ? t(key) : tag}
+                </Badge>
+              );
+            })}
+          </div>
+          {recipe.sourceUrl ? (
+            <a
+              href={recipe.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary inline-flex items-center gap-1.5 text-sm underline-offset-4 hover:underline"
+            >
+              <LinkSimpleIcon className="size-4" />
+              {t("recipe.openOriginal")}
+            </a>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              className="rounded-full"
+              render={<Link href={`/recipe/${recipe.id}/edit`} />}
+            >
+              <PencilSimpleIcon />
+              {t("recipe.edit")}
+            </Button>
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={() => onMove(recipe.list === "keeper" ? "wishlist" : "keeper")}
+            >
+              {recipe.list === "keeper"
+                ? t("recipe.moveToWishlist")
+                : t("recipe.moveToKeepers")}
+            </Button>
+            {kitchenTargets.length > 0 ? (
+              <Button
+                variant="outline"
+                className="rounded-full"
+                onClick={() => {
+                  setKitchenMessage("");
+                  setKitchenOpen(true);
+                }}
+              >
+                <CookingPotIcon />
+                {t("recipe.addToKitchen")}
+              </Button>
+            ) : null}
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={() => void copyShare()}
+            >
+              <ShareNetworkIcon />
+              {t("recipe.send")}
+            </Button>
+            <Button
+              variant="destructive"
+              className="rounded-full"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <TrashIcon />
+              {t("recipe.delete")}
+            </Button>
+          </div>
+          {copied ? <p className="text-sm text-primary">{t("recipe.copied")}</p> : null}
+          {kitchenMessage ? (
+            <p className="text-sm text-primary">{kitchenMessage}</p>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  function renderNextDay() {
+    if (!recipe.nextDay) return null;
+    return (
+      <Alert className="rounded-2xl border-primary/25 bg-primary/8">
+        <WarningIcon className="text-primary" />
+        <AlertTitle className="text-foreground">{t("recipe.nextDayTitle")}</AlertTitle>
+        <AlertDescription className="text-muted-foreground">
+          {recipe.nextDayNote || t("recipe.nextDayDefault")}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  function renderScaler() {
+    return <RecipeScaler recipe={recipe} scale={scale} />;
+  }
+
+  function renderNutrition() {
+    return (
+      <NutritionPanel
+        nutrition={recipe.nutrition}
+        factor={scale.factor}
+        baseServings={recipe.servings}
+        shownServings={scale.shownServings}
+      />
+    );
+  }
+
+  function renderIngredients() {
+    return <IngredientsChecklist recipe={recipe} factor={scale.factor} cook={cook} />;
+  }
+
+  function renderMethod() {
+    return (
+      <div className="space-y-5">
+        <MethodChecklist recipe={recipe} cook={cook} />
+        <CookProgress cook={cook} />
+      </div>
+    );
+  }
+
+  function renderNotes() {
+    return (
+      <div
+        id="what-i-changed"
+        className="scroll-mt-24 rounded-3xl border border-border bg-card p-5"
+      >
+        <h2 className="font-heading text-xl">{t("recipe.whatChanged")}</h2>
+        <p className="text-muted-foreground mt-1 text-sm">{t("recipe.whatChangedBlurb")}</p>
+        <Textarea
+          value={notesValue}
+          onChange={(event) => setNoteDraft(event.target.value)}
+          placeholder={t("recipe.notesPlaceholder")}
+          className="mt-3 rounded-xl text-base"
+        />
+        <Button
+          className="mt-3 rounded-full"
+          disabled={noteDraft == null || noteDraft === (recipe.notes ?? "")}
+          onClick={() => onSaveNote(notesValue)}
+        >
+          {t("recipe.saveNote")}
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <Button variant="ghost" render={<Link href="/" />} className="rounded-full px-2">
@@ -171,189 +387,31 @@ function RecipeBody({
 
       <CookingWakeLock enabled={cooking} onChange={setCooking} />
 
-      <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:gap-x-8 lg:gap-y-5">
-        <div className="order-1 overflow-hidden rounded-3xl border border-border bg-card lg:col-start-1 lg:row-start-1">
-          {recipe.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={recipe.imageUrl} alt="" className="h-56 w-full object-cover sm:h-72" />
-          ) : null}
-          <div className="space-y-4 p-5 sm:p-6">
-            <div>
-              <div className="mb-2 flex flex-wrap gap-2">
-                <Badge className="rounded-full">
-                  {recipe.list === "keeper" ? t("recipe.keeper") : t("recipe.wishlist")}
-                </Badge>
-                {recipe.timesCooked > 0 ? (
-                  <Badge variant="secondary" className="rounded-full">
-                    <FireIcon className="size-3" />
-                    {recipe.timesCooked === 1
-                      ? t("recipe.cookedOnce", { count: recipe.timesCooked })
-                      : t("recipe.cookedMany", { count: recipe.timesCooked })}
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="rounded-full">
-                    {t("recipe.notCooked")}
-                  </Badge>
-                )}
-                {recipe.notes?.trim() ? (
-                  <a
-                    href="#what-i-changed"
-                    className="inline-flex rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <Badge className="rounded-full bg-primary text-primary-foreground hover:opacity-90">
-                      <NotePencilIcon className="size-3.5" weight="fill" />
-                      {t("recipe.tweaked")}
-                    </Badge>
-                  </a>
-                ) : null}
-              </div>
-              <h1 className="font-heading text-4xl tracking-tight">{recipe.title}</h1>
-              {recipe.notes?.trim() ? (
-                <a
-                  href="#what-i-changed"
-                  className="text-primary mt-3 flex items-start gap-2 text-sm font-medium underline-offset-4 hover:underline"
-                >
-                  <NotePencilIcon className="mt-0.5 size-4 shrink-0" weight="fill" />
-                  <span>{t("recipe.tweakedHint")}</span>
-                </a>
-              ) : null}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <Badge className="rounded-full">
-                {difficultyKey ? t(difficultyKey) : difficulty?.label}
-              </Badge>
-              <Badge variant="secondary" className="rounded-full">
-                <ClockIcon className="size-3" />
-                {paceKey ? t(paceKey) : pace?.label}
-              </Badge>
-              {recipe.tags.map((tag) => {
-                const key = tagMessageKey(tag);
-                return (
-                  <Badge key={tag} variant="outline" className="rounded-full">
-                    {key ? t(key) : tag}
-                  </Badge>
-                );
-              })}
-            </div>
-            {recipe.sourceUrl ? (
-              <a
-                href={recipe.sourceUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-primary inline-flex items-center gap-1.5 text-sm underline-offset-4 hover:underline"
-              >
-                <LinkSimpleIcon className="size-4" />
-                {t("recipe.openOriginal")}
-              </a>
-            ) : null}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                className="rounded-full"
-                render={<Link href={`/recipe/${recipe.id}/edit`} />}
-              >
-                <PencilSimpleIcon />
-                {t("recipe.edit")}
-              </Button>
-              <Button
-                variant="outline"
-                className="rounded-full"
-                onClick={() => onMove(recipe.list === "keeper" ? "wishlist" : "keeper")}
-              >
-                {recipe.list === "keeper"
-                  ? t("recipe.moveToWishlist")
-                  : t("recipe.moveToKeepers")}
-              </Button>
-              {kitchenTargets.length > 0 ? (
-                <Button
-                  variant="outline"
-                  className="rounded-full"
-                  onClick={() => {
-                    setKitchenMessage("");
-                    setKitchenOpen(true);
-                  }}
-                >
-                  <CookingPotIcon />
-                  {t("recipe.addToKitchen")}
-                </Button>
-              ) : null}
-              <Button
-                variant="outline"
-                className="rounded-full"
-                onClick={() => void copyShare()}
-              >
-                <ShareNetworkIcon />
-                {t("recipe.send")}
-              </Button>
-              <Button
-                variant="destructive"
-                className="rounded-full"
-                onClick={() => setDeleteOpen(true)}
-              >
-                <TrashIcon />
-                {t("recipe.delete")}
-              </Button>
-            </div>
-            {copied ? <p className="text-sm text-primary">{t("recipe.copied")}</p> : null}
-            {kitchenMessage ? (
-              <p className="text-sm text-primary">{kitchenMessage}</p>
-            ) : null}
+      {isDesktop ? (
+        <div className="grid grid-cols-[1.05fr_0.95fr] gap-x-8">
+          <div className="space-y-5">
+            {renderOverview()}
+            {renderNutrition()}
+            {renderMethod()}
+          </div>
+          <div className="space-y-5">
+            {renderNextDay()}
+            {renderScaler()}
+            {renderIngredients()}
+            {renderNotes()}
           </div>
         </div>
-
-        {recipe.nextDay ? (
-          <Alert className="order-2 rounded-2xl border-primary/25 bg-primary/8 lg:col-start-2 lg:row-start-1">
-            <WarningIcon className="text-primary" />
-            <AlertTitle className="text-foreground">{t("recipe.nextDayTitle")}</AlertTitle>
-            <AlertDescription className="text-muted-foreground">
-              {recipe.nextDayNote || t("recipe.nextDayDefault")}
-            </AlertDescription>
-          </Alert>
-        ) : null}
-
-        <div className="order-3 lg:col-start-2 lg:row-start-2">
-          <RecipeScaler recipe={recipe} scale={scale} />
+      ) : (
+        <div className="flex flex-col gap-5">
+          {renderOverview()}
+          {renderNextDay()}
+          {renderScaler()}
+          {renderNutrition()}
+          {renderIngredients()}
+          {renderMethod()}
+          {renderNotes()}
         </div>
-
-        <div className="order-4 lg:col-start-1 lg:row-start-2">
-          <NutritionPanel
-            nutrition={recipe.nutrition}
-            factor={scale.factor}
-            baseServings={recipe.servings}
-            shownServings={scale.shownServings}
-          />
-        </div>
-
-        <div className="order-5 lg:col-start-2 lg:row-start-3">
-          <IngredientsChecklist recipe={recipe} factor={scale.factor} cook={cook} />
-        </div>
-
-        <div className="order-6 space-y-5 lg:col-start-1 lg:row-start-3">
-          <MethodChecklist recipe={recipe} cook={cook} />
-          <CookProgress cook={cook} />
-        </div>
-
-        <div
-          id="what-i-changed"
-          className="order-7 scroll-mt-24 rounded-3xl border border-border bg-card p-5 lg:col-start-2 lg:row-start-4"
-        >
-          <h2 className="font-heading text-xl">{t("recipe.whatChanged")}</h2>
-          <p className="text-muted-foreground mt-1 text-sm">{t("recipe.whatChangedBlurb")}</p>
-          <Textarea
-            value={notesValue}
-            onChange={(event) => setNoteDraft(event.target.value)}
-            placeholder={t("recipe.notesPlaceholder")}
-            className="mt-3 rounded-xl text-base"
-          />
-          <Button
-            className="mt-3 rounded-full"
-            disabled={noteDraft == null || noteDraft === (recipe.notes ?? "")}
-            onClick={() => onSaveNote(notesValue)}
-          >
-            {t("recipe.saveNote")}
-          </Button>
-        </div>
-      </div>
+      )}
 
       <Dialog open={kitchenOpen} onOpenChange={setKitchenOpen}>
         <DialogContent className="rounded-3xl sm:max-w-md" showCloseButton={false}>

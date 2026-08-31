@@ -5,15 +5,15 @@ import { useLocale } from "@/components/locale-provider";
 export function ShelfLoading({ label }: { label?: string }) {
   const { t } = useLocale();
   const books = [
-    { x: 46, y: 38, w: 14, h: 48 },
-    { x: 66, y: 28, w: 12, h: 58 },
-    { x: 84, y: 44, w: 16, h: 42 },
-    { x: 106, y: 24, w: 13, h: 62 },
-    { x: 125, y: 40, w: 15, h: 46 },
-    { x: 146, y: 30, w: 11, h: 56 },
-    { x: 163, y: 46, w: 17, h: 40 },
-    { x: 186, y: 34, w: 12, h: 52 },
-    { x: 204, y: 42, w: 14, h: 44 },
+    { x: 66, y: 45, w: 14, h: 48 },
+    { x: 83, y: 35, w: 12, h: 58 },
+    { x: 98, y: 51, w: 16, h: 42 },
+    { x: 117, y: 31, w: 13, h: 62 },
+    { x: 133, y: 47, w: 15, h: 46 },
+    { x: 151, y: 37, w: 11, h: 56 },
+    { x: 165, y: 53, w: 17, h: 40 },
+    { x: 185, y: 41, w: 12, h: 52 },
+    { x: 200, y: 49, w: 14, h: 44 },
   ];
 
   return (

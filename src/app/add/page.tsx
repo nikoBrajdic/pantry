@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LinkSimpleIcon, NotePencilIcon } from "@phosphor-icons/react";
+import {
+  CheckCircleIcon,
+  CircleNotchIcon,
+  LinkSimpleIcon,
+  NotePencilIcon,
+  XCircleIcon,
+} from "@phosphor-icons/react";
 import { useLocale } from "@/components/locale-provider";
 import { RecipeForm } from "@/components/recipe-form";
 import { useRecipes } from "@/components/recipe-provider";
@@ -23,6 +29,18 @@ import type { ExtractedRecipe } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type HtmlHelpKind = "fetch" | "extract";
+type StepStatus = "pending" | "active" | "ok" | "fail";
+type PullStep = { id: string; label: string; status: StepStatus };
+
+type AttemptResult = {
+  ok?: boolean;
+  recipe?: ExtractedRecipe;
+  gotHtml?: boolean;
+  reason?: string;
+  error?: string;
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function AddRecipePage() {
   const { t } = useLocale();
@@ -37,6 +55,7 @@ export default function AddRecipePage() {
   const [error, setError] = useState("");
   const [htmlHelpOpen, setHtmlHelpOpen] = useState(false);
   const [htmlHelpKind, setHtmlHelpKind] = useState<HtmlHelpKind>("fetch");
+  const [pullSteps, setPullSteps] = useState<PullStep[]>([]);
   const [targetKitchen, setTargetKitchen] = useState(household);
   const htmlPanelRef = useRef<HTMLDivElement>(null);
 
@@ -61,45 +80,97 @@ export default function AddRecipePage() {
     setError("");
   }
 
+  function setStepStatus(id: string, status: StepStatus) {
+    setPullSteps((prev) =>
+      prev.map((step) => (step.id === id ? { ...step, status } : step)),
+    );
+  }
+
+  function startStep(id: string, label: string) {
+    setPullSteps((prev) => [...prev, { id, label, status: "active" }]);
+  }
+
+  async function markOkThenContinue(id: string) {
+    setStepStatus(id, "ok");
+    await sleep(1500);
+  }
+
+  async function runAttempt(body: Record<string, unknown>): Promise<AttemptResult> {
+    const response = await fetch("/api/extract", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return (await response.json()) as AttemptResult;
+  }
+
   async function extract() {
     setError("");
     setLoading(true);
+    setPullSteps([]);
+
     try {
       const usedPaste = Boolean(html.trim());
-      const response = await fetch("/api/extract", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+
+      if (usedPaste) {
+        startStep("paste", t("add.pullStep.html"));
+        const data = await runAttempt({
+          attempt: "paste",
           url: url.trim() || undefined,
-          html: html.trim() || undefined,
-        }),
-      });
-      const data = (await response.json()) as {
-        recipe?: ExtractedRecipe;
-        error?: string;
-        reason?: string;
-        proxiesTried?: boolean;
-      };
-      if (!response.ok || !data.recipe) {
-        if (usedPaste && (data.reason === "exhausted" || data.error === "exhausted")) {
-          throw new Error(t("add.error.exhausted"));
-        }
-        if (!usedPaste && (data.reason === "fetch" || data.error === "fetch_failed")) {
-          openHtmlHelp("fetch");
+          html: html.trim(),
+        });
+        if (data.ok && data.recipe) {
+          await markOkThenContinue("paste");
+          setDraft(draftFromExtracted(data.recipe));
+          setShowHtml(false);
           return;
         }
-        if (!usedPaste && (data.reason === "extract" || data.error === "extract_failed")) {
-          openHtmlHelp("extract");
-          return;
-        }
-        if (!usedPaste) {
-          openHtmlHelp("extract");
-          return;
-        }
-        throw new Error(data.error ?? t("add.error.extract"));
+        setStepStatus("paste", "fail");
+        throw new Error(t("add.error.exhausted"));
       }
-      setDraft(draftFromExtracted(data.recipe));
-      setShowHtml(false);
+
+      const providersRes = await fetch("/api/extract");
+      const providersData = (await providersRes.json()) as {
+        providers?: { id: string; label: string }[];
+        error?: string;
+      };
+      if (!providersRes.ok) {
+        throw new Error(providersData.error ?? t("add.error.generic"));
+      }
+      const providers = providersData.providers ?? [];
+
+      let sawHtml = false;
+
+      startStep("direct", t("add.pullStep.direct"));
+      const direct = await runAttempt({
+        attempt: "direct",
+        url: url.trim(),
+      });
+      if (direct.ok && direct.recipe) {
+        await markOkThenContinue("direct");
+        setDraft(draftFromExtracted(direct.recipe));
+        return;
+      }
+      if (direct.gotHtml) sawHtml = true;
+      setStepStatus("direct", "fail");
+
+      for (const provider of providers) {
+        startStep(provider.id, provider.label);
+        const result = await runAttempt({
+          attempt: "proxy",
+          url: url.trim(),
+          provider: provider.id,
+        });
+        if (result.ok && result.recipe) {
+          await markOkThenContinue(provider.id);
+          setDraft(draftFromExtracted(result.recipe));
+          return;
+        }
+        if (result.gotHtml) sawHtml = true;
+        setStepStatus(provider.id, "fail");
+      }
+
+      openHtmlHelp(sawHtml ? "extract" : "fetch");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("add.error.generic"));
     } finally {
@@ -160,6 +231,7 @@ export default function AddRecipePage() {
             onChange={(event) => setUrl(event.target.value)}
             placeholder="https://…"
             className="h-11 rounded-xl text-base"
+            disabled={loading}
           />
           <Button
             type="submit"
@@ -211,6 +283,7 @@ export default function AddRecipePage() {
               onChange={(event) => setHtml(event.target.value)}
               placeholder={t("add.htmlPlaceholder")}
               className="field-sizing-fixed h-40 min-h-40 max-h-40 resize-none overflow-y-auto rounded-xl font-mono text-xs"
+              disabled={loading}
             />
           </div>
         ) : null}
@@ -220,6 +293,7 @@ export default function AddRecipePage() {
             type="button"
             variant="ghost"
             className="rounded-xl"
+            disabled={loading}
             onClick={() => {
               setShowHtml((open) => {
                 if (open) setHtml("");
@@ -233,6 +307,7 @@ export default function AddRecipePage() {
             type="button"
             variant="ghost"
             className="rounded-xl"
+            disabled={loading}
             onClick={() => {
               setDraft(emptyDraft());
               setError("");
@@ -309,6 +384,46 @@ export default function AddRecipePage() {
           </div>
         </div>
       ) : null}
+
+      <Dialog open={loading} onOpenChange={() => undefined}>
+        <DialogContent className="rounded-3xl sm:max-w-md" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="font-heading text-xl tracking-tight">
+              {showHtml ? t("add.pullProgress.htmlTitle") : t("add.pullProgress.title")}
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-relaxed">
+              {showHtml ? t("add.pullProgress.htmlBody") : t("add.pullProgress.body")}
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="space-y-2">
+            {pullSteps.map((step) => (
+              <li
+                key={step.id}
+                className="flex items-center gap-3 rounded-2xl border border-border px-3 py-2.5 text-sm"
+              >
+                {step.status === "active" ? (
+                  <CircleNotchIcon className="size-5 shrink-0 animate-spin text-primary" />
+                ) : step.status === "ok" ? (
+                  <CheckCircleIcon className="size-5 shrink-0 text-emerald-600" weight="fill" />
+                ) : step.status === "fail" ? (
+                  <XCircleIcon className="size-5 shrink-0 text-destructive" weight="fill" />
+                ) : (
+                  <span className="border-muted-foreground/40 size-5 shrink-0 rounded-full border" />
+                )}
+                <span
+                  className={cn(
+                    "min-w-0 flex-1",
+                    step.status === "pending" && "text-muted-foreground",
+                    step.status === "fail" && "text-muted-foreground",
+                  )}
+                >
+                  {step.label}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={htmlHelpOpen} onOpenChange={setHtmlHelpOpen}>
         <DialogContent className="rounded-3xl sm:max-w-md" showCloseButton={false}>

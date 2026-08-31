@@ -1,5 +1,9 @@
 import { assertPublicHttpUrl, extractRecipeFromHtml } from "@/lib/extract";
-import { fetchHtmlViaProxies } from "@/lib/scrape-proxies";
+import {
+  fetchHtmlViaProvider,
+  listConfiguredScrapeProviders,
+  type ScrapeProviderId,
+} from "@/lib/scrape-proxies";
 import { getSessionUser } from "@/lib/session-user";
 import type { ExtractedRecipe } from "@/lib/types";
 
@@ -44,6 +48,14 @@ async function fetchDirectHtml(url: string): Promise<string | null> {
   }
 }
 
+export async function GET() {
+  const user = await getSessionUser();
+  if (!user?.email) {
+    return Response.json({ error: "Sign in first." }, { status: 401 });
+  }
+  return Response.json({ providers: listConfiguredScrapeProviders() });
+}
+
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user?.email) {
@@ -51,59 +63,66 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = (await request.json()) as { url?: string; html?: string };
-    const pastedHtml = typeof body.html === "string" ? body.html.trim() : "";
+    const body = (await request.json()) as {
+      url?: string;
+      html?: string;
+      attempt?: "direct" | "proxy" | "paste";
+      provider?: ScrapeProviderId;
+    };
 
-    if (pastedHtml) {
+    const attempt = body.attempt ?? (body.html?.trim() ? "paste" : "direct");
+
+    if (attempt === "paste") {
+      const pastedHtml = typeof body.html === "string" ? body.html.trim() : "";
+      if (!pastedHtml) {
+        return Response.json({ error: "Paste some HTML first." }, { status: 400 });
+      }
       if (pastedHtml.length > MAX_HTML_CHARS) {
         return Response.json(
-          { error: "That HTML paste is too large.", reason: "exhausted" },
+          { ok: false, reason: "exhausted", error: "That HTML paste is too large." },
           { status: 400 },
         );
       }
       const url = optionalPublicUrl(body.url);
       const recipe = tryExtract(pastedHtml, url);
-      if (recipe) return Response.json({ recipe, source: "paste" });
-      return Response.json(
-        {
-          error: "exhausted",
-          reason: "exhausted",
-        },
-        { status: 422 },
-      );
+      if (recipe) return Response.json({ ok: true, recipe, source: "paste" });
+      return Response.json({ ok: false, reason: "exhausted", gotHtml: true }, { status: 422 });
     }
 
     const url = assertPublicHttpUrl(body.url ?? "");
 
-    // 1) Direct scrape
-    const directHtml = await fetchDirectHtml(url);
-    if (directHtml) {
-      const recipe = tryExtract(directHtml, url);
-      if (recipe) return Response.json({ recipe, source: "direct" });
+    if (attempt === "direct") {
+      const html = await fetchDirectHtml(url);
+      if (!html) {
+        return Response.json({ ok: false, gotHtml: false, source: "direct" });
+      }
+      const recipe = tryExtract(html, url);
+      if (recipe) return Response.json({ ok: true, recipe, source: "direct" });
+      return Response.json({ ok: false, gotHtml: true, source: "direct" });
     }
 
-    // 2) Rendering proxies (only providers with keys / Jina)
-    const proxied = await fetchHtmlViaProxies(url);
-    if (proxied) {
-      const recipe = tryExtract(proxied.html, url);
-      if (recipe) {
-        return Response.json({
-          recipe,
-          source: proxied.provider,
-        });
+    if (attempt === "proxy") {
+      const provider = body.provider;
+      if (!provider) {
+        return Response.json({ error: "Missing provider." }, { status: 400 });
+      }
+      try {
+        const html = await fetchHtmlViaProvider(provider, url);
+        const recipe = tryExtract(html, url);
+        if (recipe) {
+          return Response.json({ ok: true, recipe, source: provider });
+        }
+        return Response.json({ ok: false, gotHtml: true, source: provider });
+      } catch (error) {
+        console.warn(
+          `[extract] proxy ${provider} failed:`,
+          error instanceof Error ? error.message : error,
+        );
+        return Response.json({ ok: false, gotHtml: false, source: provider });
       }
     }
 
-    // 3) Everything automatic failed → client opens HTML-paste dialog
-    const reason = directHtml || proxied ? "extract" : "fetch";
-    return Response.json(
-      {
-        error: reason === "fetch" ? "fetch_failed" : "extract_failed",
-        reason,
-        proxiesTried: true,
-      },
-      { status: 422 },
-    );
+    return Response.json({ error: "Unknown attempt." }, { status: 400 });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "The recipe could not be extracted.";

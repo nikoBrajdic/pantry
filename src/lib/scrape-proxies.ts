@@ -10,9 +10,16 @@ export type ScrapeProviderId =
   | "scrapfly"
   | "browserless";
 
+export const SCRAPE_PROVIDER_LABELS: Record<ScrapeProviderId, string> = {
+  jina: "Jina Reader",
+  scrapingbee: "ScrapingBee",
+  zenrows: "ZenRows",
+  scrapfly: "Scrapfly",
+  browserless: "Browserless",
+};
+
 type Provider = {
   id: ScrapeProviderId;
-  /** Human label for logs */
   label: string;
   enabled: () => boolean;
   fetchHtml: (url: string) => Promise<string>;
@@ -37,8 +44,7 @@ async function readText(response: Response, label: string) {
 const providers: Provider[] = [
   {
     id: "jina",
-    label: "Jina Reader",
-    // Free tier works without a key; set JINA_API_KEY for higher limits.
+    label: SCRAPE_PROVIDER_LABELS.jina,
     enabled: () => true,
     async fetchHtml(url) {
       const key = env("JINA_API_KEY");
@@ -57,7 +63,7 @@ const providers: Provider[] = [
   },
   {
     id: "scrapingbee",
-    label: "ScrapingBee",
+    label: SCRAPE_PROVIDER_LABELS.scrapingbee,
     enabled: () => Boolean(env("SCRAPINGBEE_API_KEY")),
     async fetchHtml(url) {
       const key = env("SCRAPINGBEE_API_KEY");
@@ -74,7 +80,7 @@ const providers: Provider[] = [
   },
   {
     id: "zenrows",
-    label: "ZenRows",
+    label: SCRAPE_PROVIDER_LABELS.zenrows,
     enabled: () => Boolean(env("ZENROWS_API_KEY")),
     async fetchHtml(url) {
       const key = env("ZENROWS_API_KEY");
@@ -90,7 +96,7 @@ const providers: Provider[] = [
   },
   {
     id: "scrapfly",
-    label: "Scrapfly",
+    label: SCRAPE_PROVIDER_LABELS.scrapfly,
     enabled: () => Boolean(env("SCRAPFLY_API_KEY")),
     async fetchHtml(url) {
       const key = env("SCRAPFLY_API_KEY");
@@ -116,7 +122,7 @@ const providers: Provider[] = [
   },
   {
     id: "browserless",
-    label: "Browserless",
+    label: SCRAPE_PROVIDER_LABELS.browserless,
     enabled: () => Boolean(env("BROWSERLESS_API_TOKEN")),
     async fetchHtml(url) {
       const token = env("BROWSERLESS_API_TOKEN");
@@ -137,30 +143,25 @@ const providers: Provider[] = [
   },
 ];
 
-export function listConfiguredScrapeProviders(): ScrapeProviderId[] {
-  return providers.filter((item) => item.enabled()).map((item) => item.id);
+export function listConfiguredScrapeProviders(): {
+  id: ScrapeProviderId;
+  label: string;
+}[] {
+  return providers
+    .filter((item) => item.enabled())
+    .map((item) => ({ id: item.id, label: item.label }));
 }
 
-/**
- * Try each configured provider in order until one returns HTML.
- * Returns null if none succeed.
- */
-export async function fetchHtmlViaProxies(
+export async function fetchHtmlViaProvider(
+  id: ScrapeProviderId,
   url: string,
-): Promise<{ html: string; provider: ScrapeProviderId } | null> {
-  for (const provider of providers) {
-    if (!provider.enabled()) continue;
-    try {
-      const html = await provider.fetchHtml(url);
-      if (html.trim().length > 200) {
-        return { html, provider: provider.id };
-      }
-    } catch (error) {
-      console.warn(
-        `[extract] ${provider.label} failed:`,
-        error instanceof Error ? error.message : error,
-      );
-    }
+): Promise<string> {
+  const provider = providers.find((item) => item.id === id);
+  if (!provider) throw new Error("Unknown scrape provider.");
+  if (!provider.enabled()) throw new Error(`${provider.label} is not configured.`);
+  const html = await provider.fetchHtml(url);
+  if (html.trim().length < 200) {
+    throw new Error(`${provider.label} returned too little HTML.`);
   }
-  return null;
+  return html;
 }
