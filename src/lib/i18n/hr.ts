@@ -86,6 +86,7 @@ export const hr: Record<MessageKey, string> = {
   "add.pull": "Povuci recept",
   "add.pullFromHtml": "Iz HTML-a",
   "add.reading": "Čitam stranicu…",
+  "add.readingLong": "Čitam stranicu (može potrajati)…",
   "add.readingHtml": "Čitam HTML…",
   "add.pasteHtml": "Zalijepi HTML stranice",
   "add.hideHtml": "Sakrij HTML",
@@ -108,16 +109,18 @@ export const hr: Record<MessageKey, string> = {
   "add.pullErrorTitle": "Nije uspjelo povući recept",
   "add.htmlHelp.fetchTitle": "Ova stranica ne dijeli recept putem linka",
   "add.htmlHelp.fetchBody":
-    "Neke stranice s receptima blokiraju aplikacije da pročitaju stranicu kad zalijepiš link. Pantry nije dobio sastojke ni korake s tog URL-a. Ipak ga možeš dodati kopiranjem živog HTML-a iz Inspect → Elements (ne View Page Source).",
+    "Pantry je pokušao obično preuzimanje i rezervne servise (ako su podešeni). Stranica i dalje nije dala sadržaj. Možeš zalijepiti živi HTML iz preglednika — Inspect → Elements → kopiraj outerHTML gornjeg <html> — ili dodati recept ručno.",
   "add.htmlHelp.extractTitle": "Nismo mogli pročitati recept s tog linka",
   "add.htmlHelp.extractBody":
-    "Stranica se otvorila, ali verzija koju aplikacije preuzimaju često nema recept. U pregledniku koristi Inspect → Elements, kopiraj outerHTML gornjeg <html> taga i zalijepi ovdje — View Page Source obično nema taj živi sadržaj.",
+    "Pantry je dohvatio stranicu (uključujući rezervne servise ako su podešeni), ali i dalje nije našao sastojke i korake u upotrebljivom obliku. Zalijepi živi <html> outerHTML iz Inspect → Elements, ili dodaj recept ručno.",
   "add.saveTo": "Spremi u",
   "add.personal": "Osobna kuhinja",
   "add.save": "Spremi u knjižnicu",
   "add.saving": "Spremam…",
   "add.cancel": "Odustani",
   "add.error.extract": "Recept se nije mogao izvući.",
+  "add.error.exhausted":
+    "Nema više automatskih pokušaja ni uspjeha s tim HTML-om. Dodaj recept ručno ili probaj drugu stranicu recepta.",
   "add.error.generic": "Nešto je pošlo po krivu.",
   "add.error.ingredient": "Dodaj barem jedan sastojak.",
 

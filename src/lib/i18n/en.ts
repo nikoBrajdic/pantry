@@ -84,6 +84,7 @@ export const en = {
   "add.pull": "Pull recipe",
   "add.pullFromHtml": "From HTML",
   "add.reading": "Reading the page…",
+  "add.readingLong": "Reading the page (may take a bit)…",
   "add.readingHtml": "Reading HTML…",
   "add.pasteHtml": "Paste page HTML",
   "add.hideHtml": "Hide HTML paste",
@@ -106,16 +107,18 @@ export const en = {
   "add.pullErrorTitle": "Could not pull that recipe",
   "add.htmlHelp.fetchTitle": "This site won’t share the recipe by link",
   "add.htmlHelp.fetchBody":
-    "Some recipe sites block apps from reading the page when you paste a link. Pantry never got the ingredients or steps from that URL. You can still add it by copying the live page HTML from Inspect → Elements (not View Page Source).",
+    "Pantry tried a normal download and the backup fetch services (when configured). The site still would not give us the page. You can paste the live HTML from your browser — Inspect → Elements → copy the top <html> outerHTML — or add the recipe by hand.",
   "add.htmlHelp.extractTitle": "We couldn’t read a recipe from that link",
   "add.htmlHelp.extractBody":
-    "The page opened, but the version apps download often lacks the recipe. In your browser, use Inspect → Elements, copy the top <html> outerHTML, and paste it here — View Page Source is usually missing that live content.",
+    "Pantry reached the page (including backup fetch services when configured), but still could not find ingredients and steps in a usable form. Paste the live <html> outerHTML from Inspect → Elements, or add the recipe by hand.",
   "add.saveTo": "Save to",
   "add.personal": "Personal kitchen",
   "add.save": "Save to library",
   "add.saving": "Saving…",
   "add.cancel": "Cancel",
   "add.error.extract": "The recipe could not be extracted.",
+  "add.error.exhausted":
+    "Nothing left to try automatically or from that HTML paste. Add the recipe by hand, or try a different recipe page.",
   "add.error.generic": "Something went wrong.",
   "add.error.ingredient": "Add at least one ingredient.",
 

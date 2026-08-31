@@ -78,8 +78,12 @@ export default function AddRecipePage() {
         recipe?: ExtractedRecipe;
         error?: string;
         reason?: string;
+        proxiesTried?: boolean;
       };
       if (!response.ok || !data.recipe) {
+        if (usedPaste && (data.reason === "exhausted" || data.error === "exhausted")) {
+          throw new Error(t("add.error.exhausted"));
+        }
         if (!usedPaste && (data.reason === "fetch" || data.error === "fetch_failed")) {
           openHtmlHelp("fetch");
           return;
@@ -88,7 +92,6 @@ export default function AddRecipePage() {
           openHtmlHelp("extract");
           return;
         }
-        // URL pull failed for another reason — still offer HTML paste
         if (!usedPaste) {
           openHtmlHelp("extract");
           return;
@@ -167,7 +170,7 @@ export default function AddRecipePage() {
             {loading
               ? showHtml
                 ? t("add.readingHtml")
-                : t("add.reading")
+                : t("add.readingLong")
               : showHtml
                 ? t("add.pullFromHtml")
                 : t("add.pull")}
