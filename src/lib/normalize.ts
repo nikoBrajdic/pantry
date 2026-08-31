@@ -1,5 +1,6 @@
 import type { Nutrition, Recipe } from "./types";
 import { parseIngredient } from "./ingredients";
+import { normalizeTagSlug } from "./tag-normalize";
 
 export function normalizeNutrition(value: unknown): Nutrition | undefined {
   if (!value || typeof value !== "object") return undefined;
@@ -31,6 +32,14 @@ export function scaleNutrition(nutrition: Nutrition | undefined, factor: number)
 }
 
 export function normalizeRecipe(recipe: Recipe): Recipe {
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const raw of recipe.tags ?? []) {
+    const id = normalizeTagSlug(raw);
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    tags.push(id);
+  }
   return {
     ...recipe,
     list: recipe.list === "keeper" ? "keeper" : "wishlist",
@@ -39,7 +48,7 @@ export function normalizeRecipe(recipe: Recipe): Recipe {
       ingredient.raw?.trim() ? parseIngredient(ingredient.raw) : ingredient,
     ),
     instructions: recipe.instructions ?? [],
-    tags: recipe.tags ?? [],
+    tags,
     nutrition: normalizeNutrition(recipe.nutrition),
   };
 }

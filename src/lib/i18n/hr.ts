@@ -286,7 +286,8 @@ export const hr: Record<MessageKey, string> = {
   "form.difficulty": "Težina",
   "form.pace": "Tempo",
   "form.tags": "Oznake",
-  "form.tagsHint": "Dodirni sve što odgovara — ili dodaj svoju ako ništa ne paše.",
+  "form.tagsHint":
+    "Pretraži oznake kuhinje, odaberi prijedlog ili stvori novu. Pravopis i razmaci se ujednačuju da nema duplikata.",
   "form.nutritionFromSource": "Makronutrijenti s izvora",
   "form.nutritionScaleHint":
     "Spremljeni s receptom i skaliraju se kad mijenjaš porcije.",
@@ -307,6 +308,10 @@ export const hr: Record<MessageKey, string> = {
 
   "tags.add": "Dodaj oznaku",
   "tags.placeholder": "npr. nedjeljni ručak",
+  "tags.searchPlaceholder": "Traži ili stvori oznaku…",
+  "tags.create": "Stvori „{label}“",
+  "tags.didYouMean": "Slično „{label}“",
+  "tags.noMatches": "Nema podudaranja — Enter za novu oznaku.",
   "tags.save": "Dodaj",
   "tags.cancel": "Odustani",
 

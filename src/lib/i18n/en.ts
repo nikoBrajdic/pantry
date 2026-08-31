@@ -281,7 +281,8 @@ export const en = {
   "form.difficulty": "Difficulty",
   "form.pace": "Pace",
   "form.tags": "Tags",
-  "form.tagsHint": "Tap everything that fits — or add your own if none apply.",
+  "form.tagsHint":
+    "Search your kitchen’s tags, pick a suggestion, or create one. Spelling and spacing are normalized so duplicates don’t pile up.",
   "form.nutritionFromSource": "Macronutrients from the source",
   "form.nutritionScaleHint":
     "Saved with the recipe and scaled when you change servings.",
@@ -302,6 +303,10 @@ export const en = {
 
   "tags.add": "Add a tag",
   "tags.placeholder": "e.g. Sunday roast",
+  "tags.searchPlaceholder": "Search or create a tag…",
+  "tags.create": "Create “{label}”",
+  "tags.didYouMean": "Close to “{label}”",
+  "tags.noMatches": "No matching tags yet — press Enter to create one.",
   "tags.save": "Add",
   "tags.cancel": "Cancel",
 
