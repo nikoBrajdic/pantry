@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { MagnifyingGlassIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon, PlusIcon } from "@phosphor-icons/react";
 import { useLocale } from "@/components/locale-provider";
 import { useRecipes } from "@/components/recipe-provider";
 import { RECIPE_TAGS } from "@/lib/tags";
@@ -16,6 +16,12 @@ import type { MessageKey } from "@/lib/i18n";
 import { tagMessageKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+
+const BUILTIN_TAGS: ShelfTag[] = RECIPE_TAGS.map((tag) => ({
+  id: tag.id,
+  label: tag.label,
+}));
+const BUILTIN_IDS = new Set(BUILTIN_TAGS.map((tag) => tag.id));
 
 function displayLabel(
   tag: ShelfTag,
@@ -36,9 +42,8 @@ export function TagPicker({
   const { household } = useRecipes();
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
-  const [catalog, setCatalog] = useState<ShelfTag[]>(
-    RECIPE_TAGS.map((tag) => ({ id: tag.id, label: tag.label })),
-  );
+  /** Custom / shelf tags shown after builtins; never removed on unselect. */
+  const [extraTags, setExtraTags] = useState<ShelfTag[]>([]);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -50,20 +55,37 @@ export function TagPicker({
         const response = await fetch("/api/tags");
         const data = (await response.json()) as { tags?: ShelfTag[] };
         if (cancelled || !response.ok || !data.tags) return;
-        setCatalog(data.tags);
+        const customs = data.tags.filter((tag) => !BUILTIN_IDS.has(tag.id));
+        setExtraTags((prev) => {
+          const seen = new Set(prev.map((tag) => tag.id));
+          const next = [...prev];
+          for (const tag of customs) {
+            if (seen.has(tag.id)) continue;
+            seen.add(tag.id);
+            next.push(tag);
+          }
+          return next;
+        });
       } catch {
-        // keep builtins
+        // keep local list
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [household, value.join("|")]);
+  }, [household]);
 
-  const selected = useMemo(() => {
-    const byId = new Map(catalog.map((tag) => [tag.id, tag]));
-    return value.map((id) => byId.get(id) ?? { id, label: id.replace(/-/g, " ") });
-  }, [catalog, value]);
+  const cloudTags = useMemo(() => {
+    const extras = [...extraTags];
+    for (const id of value) {
+      if (BUILTIN_IDS.has(id)) continue;
+      if (extras.some((tag) => tag.id === id)) continue;
+      extras.push({ id, label: normalizeTagLabel(id.replace(/-/g, " ")) || id });
+    }
+    return [...BUILTIN_TAGS, ...extras];
+  }, [extraTags, value]);
+
+  const catalog = cloudTags;
 
   const suggestions = useMemo(() => {
     return suggestTags(query, catalog, { exclude: value, limit: 8 });
@@ -71,21 +93,22 @@ export function TagPicker({
 
   const exact = exactTagMatch(query, catalog);
   const createSlug = normalizeTagSlug(query);
-  const canCreate = Boolean(createSlug) && !exact && !value.includes(createSlug);
+  const canCreate = Boolean(createSlug) && !exact;
 
-  const options: Array<{ kind: "tag"; tag: ShelfTag } | { kind: "create"; slug: string; label: string }> =
-    [
-      ...suggestions.map((tag) => ({ kind: "tag" as const, tag })),
-      ...(canCreate
-        ? [
-            {
-              kind: "create" as const,
-              slug: createSlug,
-              label: normalizeTagLabel(query),
-            },
-          ]
-        : []),
-    ];
+  const options: Array<
+    { kind: "tag"; tag: ShelfTag } | { kind: "create"; slug: string; label: string }
+  > = [
+    ...suggestions.map((tag) => ({ kind: "tag" as const, tag })),
+    ...(canCreate && !value.includes(createSlug)
+      ? [
+          {
+            kind: "create" as const,
+            slug: createSlug,
+            label: normalizeTagLabel(query),
+          },
+        ]
+      : []),
+  ];
 
   useEffect(() => {
     setActiveIndex(0);
@@ -99,55 +122,41 @@ export function TagPicker({
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, []);
 
-  function addTag(id: string, label?: string) {
+  function ensureInCloud(id: string, label?: string) {
     const slug = normalizeTagSlug(id);
+    if (!slug || BUILTIN_IDS.has(slug)) return slug;
+    setExtraTags((prev) => {
+      if (prev.some((tag) => tag.id === slug)) return prev;
+      return [...prev, { id: slug, label: normalizeTagLabel(label || slug) || slug }];
+    });
+    return slug;
+  }
+
+  function selectTag(id: string, label?: string) {
+    const slug = ensureInCloud(id, label);
     if (!slug || value.includes(slug)) return;
-    if (label && !catalog.some((tag) => tag.id === slug)) {
-      setCatalog((prev) =>
-        [...prev, { id: slug, label: normalizeTagLabel(label) || slug }].sort((a, b) =>
-          a.label.localeCompare(b.label),
-        ),
-      );
-    }
     onChange([...value, slug]);
     setQuery("");
-    setOpen(true);
+    setOpen(false);
   }
 
-  function removeTag(id: string) {
-    onChange(value.filter((item) => item !== id));
-  }
-
-  function toggleBuiltin(id: string) {
-    if (value.includes(id)) removeTag(id);
-    else addTag(id);
+  function toggleTag(id: string) {
+    if (value.includes(id)) {
+      onChange(value.filter((item) => item !== id));
+      return;
+    }
+    selectTag(id);
   }
 
   function chooseOption(index: number) {
     const option = options[index];
     if (!option) return;
-    if (option.kind === "tag") addTag(option.tag.id, option.tag.label);
-    else addTag(option.slug, option.label);
+    if (option.kind === "tag") selectTag(option.tag.id, option.tag.label);
+    else selectTag(option.slug, option.label);
   }
 
   return (
     <div className="space-y-3" ref={rootRef}>
-      {selected.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {selected.map((tag) => (
-            <button
-              key={tag.id}
-              type="button"
-              onClick={() => removeTag(tag.id)}
-              className="border-primary bg-primary text-primary-foreground inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm"
-            >
-              {displayLabel(tag, t)}
-              <XIcon className="size-3.5" />
-            </button>
-          ))}
-        </div>
-      ) : null}
-
       <div className="relative">
         <MagnifyingGlassIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
         <Input
@@ -174,11 +183,10 @@ export function TagPicker({
             } else if (event.key === "Enter") {
               event.preventDefault();
               if (options[activeIndex]) chooseOption(activeIndex);
-              else if (canCreate) addTag(createSlug, normalizeTagLabel(query));
+              else if (exact) selectTag(exact.id, exact.label);
+              else if (canCreate) selectTag(createSlug, normalizeTagLabel(query));
             } else if (event.key === "Escape") {
               setOpen(false);
-            } else if (event.key === "Backspace" && !query && value.length > 0) {
-              removeTag(value[value.length - 1]!);
             }
           }}
         />
@@ -246,22 +254,21 @@ export function TagPicker({
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {RECIPE_TAGS.map((tag) => {
-          const selectedBuiltin = value.includes(tag.id);
-          const key = tagMessageKey(tag.id);
+        {cloudTags.map((tag) => {
+          const selected = value.includes(tag.id);
           return (
             <button
               key={tag.id}
               type="button"
-              onClick={() => toggleBuiltin(tag.id)}
+              onClick={() => toggleTag(tag.id)}
               className={cn(
                 "rounded-full border px-3 py-1.5 text-sm transition-colors",
-                selectedBuiltin
+                selected
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card text-foreground hover:border-primary/40",
               )}
             >
-              {key ? t(key) : tag.label}
+              {displayLabel(tag, t)}
             </button>
           );
         })}

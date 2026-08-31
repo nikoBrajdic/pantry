@@ -15,9 +15,11 @@ export function normalizeTagSlug(raw: string): string {
     .replace(/^-|-$/g, "");
 }
 
-/** Display label: trim + collapse whitespace, keep user casing. */
+/** Display label: trim, collapse whitespace, capitalize first letter. */
 export function normalizeTagLabel(raw: string): string {
-  return raw.trim().replace(/\s+/g, " ");
+  const trimmed = raw.trim().replace(/\s+/g, " ");
+  if (!trimmed) return "";
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
 }
 
 export function isBuiltinTag(id: string): id is TagId {
