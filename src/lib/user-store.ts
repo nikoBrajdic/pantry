@@ -9,7 +9,13 @@ import {
   renameHousehold,
   writeHousehold,
 } from "./household-store";
-import { mergeRecipes, newId } from "./storage";
+import {
+  insertHouseholdRecipe,
+  insertPersonalRecipe,
+  listPersonalRecipes,
+  replacePersonalRecipes,
+} from "./recipe-store";
+import { newId } from "./storage";
 import { createClient } from "./supabase/server";
 
 export function userKey(email: string) {
@@ -20,9 +26,20 @@ type ProfileRow = {
   id: string;
   email: string;
   household_code: string;
-  recipes: Recipe[];
   updated_at: string;
 };
+
+function seedSamples(): Recipe[] {
+  const now = new Date().toISOString();
+  return SAMPLE_RECIPES.map((recipe) =>
+    normalizeRecipe({
+      ...recipe,
+      id: newId(),
+      createdAt: now,
+      updatedAt: now,
+    }),
+  );
+}
 
 async function requireAuthUser() {
   const supabase = await createClient();
@@ -41,27 +58,27 @@ async function ensureProfile(
 ): Promise<ProfileRow> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, email, household_code, recipes, updated_at")
+    .select("id, email, household_code, updated_at")
     .eq("id", user.id)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
   if (data) return data as ProfileRow;
 
-  const seeded = SAMPLE_RECIPES.map(normalizeRecipe);
   const fresh = {
     id: user.id,
     email: userKey(user.email),
     household_code: "",
-    recipes: seeded,
     updated_at: new Date().toISOString(),
   };
   const { data: created, error: insertError } = await supabase
     .from("profiles")
     .insert(fresh)
-    .select("id, email, household_code, recipes, updated_at")
+    .select("id, email, household_code, updated_at")
     .single();
   if (insertError) throw new Error(insertError.message);
+
+  await replacePersonalRecipes(user.id, seedSamples());
   return created as ProfileRow;
 }
 
@@ -84,12 +101,13 @@ async function toLibrary(
     }
   }
 
+  const recipes = await listPersonalRecipes(profile.id);
   return {
     email: userKey(userEmail),
     householdCode: "",
     kitchens,
     householdCodes: kitchens.map((item) => item.code),
-    recipes: ((profile.recipes ?? []) as Recipe[]).map(normalizeRecipe),
+    recipes,
     updatedAt: profile.updated_at,
   };
 }
@@ -105,17 +123,19 @@ export async function readUserLibrary(email?: string): Promise<UserLibrary> {
     email: user.email!,
   });
 
-  const recipes = ((profile.recipes ?? []) as Recipe[]).map(normalizeRecipe);
-  if (recipes.length === 0 && !profile.household_code) {
-    const seeded = SAMPLE_RECIPES.map(normalizeRecipe);
-    const { data, error } = await supabase
-      .from("profiles")
-      .update({ recipes: seeded, updated_at: new Date().toISOString() })
-      .eq("id", user.id)
-      .select("id, email, household_code, recipes, updated_at")
-      .single();
-    if (error) throw new Error(error.message);
-    profile = data as ProfileRow;
+  if (!profile.household_code) {
+    const recipes = await listPersonalRecipes(user.id);
+    if (recipes.length === 0) {
+      await replacePersonalRecipes(user.id, seedSamples());
+      const { data, error } = await supabase
+        .from("profiles")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", user.id)
+        .select("id, email, household_code, updated_at")
+        .single();
+      if (error) throw new Error(error.message);
+      profile = data as ProfileRow;
+    }
   }
 
   if (profile.household_code) {
@@ -144,22 +164,22 @@ export async function writeUserLibrary(library: UserLibrary) {
         updated_at: updatedAt,
       })
       .eq("id", user.id)
-      .select("id, email, household_code, recipes, updated_at")
+      .select("id, email, household_code, updated_at")
       .single();
     if (error) throw new Error(error.message);
     const kitchens = await listKitchens(user.id);
     return toLibrary(user.email!, data as ProfileRow, kitchens);
   }
 
+  await replacePersonalRecipes(user.id, recipes);
   const { data, error } = await supabase
     .from("profiles")
     .update({
       household_code: "",
-      recipes,
       updated_at: updatedAt,
     })
     .eq("id", user.id)
-    .select("id, email, household_code, recipes, updated_at")
+    .select("id, email, household_code, updated_at")
     .single();
   if (error) throw new Error(error.message);
 
@@ -169,7 +189,7 @@ export async function writeUserLibrary(library: UserLibrary) {
     householdCode: "",
     kitchens,
     householdCodes: kitchens.map((item) => item.code),
-    recipes: ((data.recipes ?? []) as Recipe[]).map(normalizeRecipe),
+    recipes,
     updatedAt: data.updated_at,
   } satisfies UserLibrary;
 }
@@ -217,13 +237,7 @@ export async function copyRecipeToKitchen(recipeId: string, targetCode: string) 
   });
 
   if (!target) {
-    const personal = ((profile.recipes ?? []) as Recipe[]).map(normalizeRecipe);
-    const recipes = mergeRecipes(personal, [copy]);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ recipes, updated_at: now })
-      .eq("id", user.id);
-    if (error) throw new Error(error.message);
+    await insertPersonalRecipe(user.id, copy);
     return { recipe: copy, targetCode: "" };
   }
 
@@ -235,7 +249,7 @@ export async function copyRecipeToKitchen(recipeId: string, targetCode: string) 
   const household = await readHousehold(target);
   if (!household) throw new Error("That kitchen was not found.");
 
-  await writeHousehold(target, mergeRecipes(household.recipes, [copy]));
+  await insertHouseholdRecipe(target, copy);
   return { recipe: copy, targetCode: target };
 }
 
@@ -249,7 +263,7 @@ export async function switchHousehold(code: string) {
       .from("profiles")
       .update({ household_code: "", updated_at: new Date().toISOString() })
       .eq("id", user.id)
-      .select("id, email, household_code, recipes, updated_at")
+      .select("id, email, household_code, updated_at")
       .single();
     if (error) throw new Error(error.message);
     const kitchens = await listKitchens(user.id);
@@ -265,7 +279,7 @@ export async function switchHousehold(code: string) {
     .from("profiles")
     .update({ household_code: clean, updated_at: new Date().toISOString() })
     .eq("id", user.id)
-    .select("id, email, household_code, recipes, updated_at")
+    .select("id, email, household_code, updated_at")
     .single();
   if (error) throw new Error(error.message);
   return toLibrary(user.email!, { ...profile, ...data } as ProfileRow, kitchens);
@@ -286,7 +300,7 @@ export async function leaveHouseholdMembership(code: string) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", user.id)
-    .select("id, email, household_code, recipes, updated_at")
+    .select("id, email, household_code, updated_at")
     .single();
   if (error) throw new Error(error.message);
 

@@ -40,6 +40,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 - `supabase/migrations/20260330120000_init.sql`
 - `supabase/migrations/20260330130000_multi_kitchens.sql`
+- `supabase/migrations/20260330140000_recipe_shares.sql`
+- `supabase/migrations/20260330150000_fix_household_members_rls.sql`
+- `supabase/migrations/20260330160000_household_names.sql`
+- `supabase/migrations/20260330170000_recipes_table.sql`
 
 ### 2. Google login (via Supabase Auth)
 

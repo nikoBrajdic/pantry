@@ -60,7 +60,7 @@ export function RecipeCard({
         </div>
         <CardContent className="flex flex-1 flex-col gap-3 py-(--card-spacing)">
           <div>
-            <h2 className="font-heading text-xl leading-tight">{recipe.title}</h2>
+            <h2 className="font-heading text-xl font-bold leading-tight">{recipe.title}</h2>
             <p className="text-muted-foreground mt-1 text-sm">
               {recipe.servings}{" "}
               {recipe.servings === 1 ? t("card.serving") : t("card.servings")}

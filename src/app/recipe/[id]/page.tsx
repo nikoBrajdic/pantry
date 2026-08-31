@@ -216,7 +216,7 @@ function RecipeBody({
                 </a>
               ) : null}
             </div>
-            <h1 className="font-heading text-4xl tracking-tight">{recipe.title}</h1>
+            <h1 className="font-heading text-4xl font-bold tracking-tight">{recipe.title}</h1>
             {recipe.notes?.trim() ? (
               <a
                 href="#what-i-changed"

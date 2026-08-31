@@ -1,4 +1,4 @@
-import { makeHouseholdCode, readHousehold, writeHousehold } from "@/lib/household-store";
+import { ensureHousehold, makeHouseholdCode, readHousehold, writeHousehold } from "@/lib/household-store";
 import { requireEmail } from "@/lib/session-user";
 import {
   leaveHouseholdMembership,
@@ -78,8 +78,9 @@ export async function POST(request: Request) {
 
     // create — keep existing memberships; open an additional kitchen
     const code = makeHouseholdCode();
-    const household = await writeHousehold(code, body.recipes ?? current.recipes);
+    await ensureHousehold(code);
     await addMembership(user.id, code);
+    const household = await writeHousehold(code, body.recipes ?? current.recipes);
     const library = await writeUserLibrary({
       email,
       householdCode: code,

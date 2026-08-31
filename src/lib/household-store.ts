@@ -1,5 +1,8 @@
 import type { HouseholdPayload, KitchenSummary, Recipe } from "./types";
-import { normalizeRecipe } from "./normalize";
+import {
+  listHouseholdRecipes,
+  replaceHouseholdRecipes,
+} from "./recipe-store";
 import { createClient } from "./supabase/server";
 
 function normalizeCode(code: string) {
@@ -27,19 +30,19 @@ export async function readHousehold(code: string): Promise<HouseholdPayload | nu
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("households")
-    .select("code, name, recipes, updated_at")
+    .select("code, name, updated_at")
     .eq("code", clean)
     .maybeSingle();
 
   if (error || !data) {
-    // Older DBs may not have the name column yet.
     if (error?.message.toLowerCase().includes("name")) {
       const fallback = await supabase
         .from("households")
-        .select("code, recipes, updated_at")
+        .select("code, updated_at")
         .eq("code", clean)
         .maybeSingle();
       if (fallback.error || !fallback.data) return null;
+      const recipes = await listHouseholdRecipes(clean);
       const { count, error: countError } = await supabase
         .from("household_members")
         .select("*", { count: "exact", head: true })
@@ -47,7 +50,7 @@ export async function readHousehold(code: string): Promise<HouseholdPayload | nu
       return {
         code: fallback.data.code,
         name: fallback.data.code,
-        recipes: ((fallback.data.recipes ?? []) as Recipe[]).map(normalizeRecipe),
+        recipes,
         updatedAt: fallback.data.updated_at,
         memberCount: countError ? undefined : (count ?? undefined),
       };
@@ -55,6 +58,7 @@ export async function readHousehold(code: string): Promise<HouseholdPayload | nu
     return null;
   }
 
+  const recipes = await listHouseholdRecipes(clean);
   const { count, error: countError } = await supabase
     .from("household_members")
     .select("*", { count: "exact", head: true })
@@ -63,13 +67,13 @@ export async function readHousehold(code: string): Promise<HouseholdPayload | nu
   return {
     code: data.code,
     name: kitchenName(data.name, data.code),
-    recipes: ((data.recipes ?? []) as Recipe[]).map(normalizeRecipe),
+    recipes,
     updatedAt: data.updated_at,
     memberCount: countError ? undefined : (count ?? undefined),
   };
 }
 
-export async function writeHousehold(code: string, recipes: Recipe[], name?: string) {
+export async function ensureHousehold(code: string, name?: string) {
   const clean = normalizeCode(code);
   if (clean.length < 4) {
     throw new Error("That kitchen code is too short.");
@@ -77,58 +81,36 @@ export async function writeHousehold(code: string, recipes: Recipe[], name?: str
 
   const supabase = await createClient();
   const updatedAt = new Date().toISOString();
-  const normalizedRecipes = recipes.map(normalizeRecipe);
-
   const { data: existing } = await supabase
     .from("households")
-    .select("code, name")
+    .select("code, name, updated_at")
     .eq("code", clean)
     .maybeSingle();
 
   if (existing) {
-    const update: Record<string, unknown> = {
-      recipes: normalizedRecipes,
-      updated_at: updatedAt,
-    };
-    if (typeof name === "string") {
-      update.name = name.trim();
-    }
-    const { data, error } = await supabase
-      .from("households")
-      .update(update)
-      .eq("code", clean)
-      .select("code, name, recipes, updated_at")
-      .single();
-    if (error) {
-      // Retry without name if column missing
-      if (error.message.toLowerCase().includes("name")) {
-        const retry = await supabase
-          .from("households")
-          .update({ recipes: normalizedRecipes, updated_at: updatedAt })
-          .eq("code", clean)
-          .select("code, recipes, updated_at")
-          .single();
-        if (retry.error) throw new Error(retry.error.message);
-        return {
-          code: retry.data.code,
-          name: retry.data.code,
-          recipes: (retry.data.recipes as Recipe[]).map(normalizeRecipe),
-          updatedAt: retry.data.updated_at,
-        } satisfies HouseholdPayload;
-      }
-      throw new Error(error.message);
+    if (typeof name === "string" && name.trim() && name.trim() !== kitchenName(existing.name, existing.code)) {
+      const { data, error } = await supabase
+        .from("households")
+        .update({ name: name.trim(), updated_at: updatedAt })
+        .eq("code", clean)
+        .select("code, name, updated_at")
+        .single();
+      if (error) throw new Error(error.message);
+      return {
+        code: data.code,
+        name: kitchenName(data.name, data.code),
+        updatedAt: data.updated_at,
+      };
     }
     return {
-      code: data.code,
-      name: kitchenName(data.name, data.code),
-      recipes: (data.recipes as Recipe[]).map(normalizeRecipe),
-      updatedAt: data.updated_at,
-    } satisfies HouseholdPayload;
+      code: existing.code,
+      name: kitchenName(existing.name, existing.code),
+      updatedAt: existing.updated_at,
+    };
   }
 
   const insertPayload: Record<string, unknown> = {
     code: clean,
-    recipes: normalizedRecipes,
     updated_at: updatedAt,
   };
   if (typeof name === "string" && name.trim()) {
@@ -138,22 +120,21 @@ export async function writeHousehold(code: string, recipes: Recipe[], name?: str
   const { data, error } = await supabase
     .from("households")
     .insert(insertPayload)
-    .select("code, name, recipes, updated_at")
+    .select("code, name, updated_at")
     .single();
   if (error) {
     if (error.message.toLowerCase().includes("name")) {
       const retry = await supabase
         .from("households")
-        .insert({ code: clean, recipes: normalizedRecipes, updated_at: updatedAt })
-        .select("code, recipes, updated_at")
+        .insert({ code: clean, updated_at: updatedAt })
+        .select("code, updated_at")
         .single();
       if (retry.error) throw new Error(retry.error.message);
       return {
         code: retry.data.code,
         name: retry.data.code,
-        recipes: (retry.data.recipes as Recipe[]).map(normalizeRecipe),
         updatedAt: retry.data.updated_at,
-      } satisfies HouseholdPayload;
+      };
     }
     throw new Error(error.message);
   }
@@ -161,8 +142,19 @@ export async function writeHousehold(code: string, recipes: Recipe[], name?: str
   return {
     code: data.code,
     name: kitchenName(data.name, data.code),
-    recipes: (data.recipes as Recipe[]).map(normalizeRecipe),
     updatedAt: data.updated_at,
+  };
+}
+
+export async function writeHousehold(code: string, recipes: Recipe[], name?: string) {
+  const clean = normalizeCode(code);
+  const meta = await ensureHousehold(clean, name);
+  const nextRecipes = await replaceHouseholdRecipes(clean, recipes);
+  return {
+    code: meta.code,
+    name: meta.name,
+    recipes: nextRecipes,
+    updatedAt: meta.updatedAt,
   } satisfies HouseholdPayload;
 }
 
@@ -177,13 +169,14 @@ export async function renameHousehold(code: string, name: string) {
     .from("households")
     .update({ name: trimmed, updated_at: new Date().toISOString() })
     .eq("code", clean)
-    .select("code, name, recipes, updated_at")
+    .select("code, name, updated_at")
     .single();
   if (error) throw new Error(error.message);
+  const recipes = await listHouseholdRecipes(clean);
   return {
     code: data.code,
     name: kitchenName(data.name, data.code),
-    recipes: (data.recipes as Recipe[]).map(normalizeRecipe),
+    recipes,
     updatedAt: data.updated_at,
   } satisfies HouseholdPayload;
 }
@@ -200,7 +193,6 @@ export async function listKitchens(userId: string): Promise<KitchenSummary[]> {
     if (error.message.toLowerCase().includes("household_members")) {
       return [];
     }
-    // Fallback without join / name column
     const basic = await supabase
       .from("household_members")
       .select("household_code")
