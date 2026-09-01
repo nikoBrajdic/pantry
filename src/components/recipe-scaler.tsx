@@ -3,21 +3,54 @@
 import { useState } from "react";
 import { MinusIcon, PlusIcon } from "@phosphor-icons/react";
 import { useLocale } from "@/components/locale-provider";
-import { formatAmount, scaleFromHave, scaleServings } from "@/lib/ingredients";
+import {
+  convertIngredient,
+  displayUnit,
+  formatAmount,
+  parseIngredient,
+  scaleFromHave,
+  scaleServings,
+} from "@/lib/ingredients";
 import type { Recipe } from "@/lib/types";
+import type { UnitSystem } from "@/lib/units";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function useRecipeScale(recipe: Recipe) {
+function displayIngredientForScale(ingredient: Recipe["ingredients"][number], system: UnitSystem) {
+  const parsed =
+    ingredient.raw && ingredient.raw.trim()
+      ? parseIngredient(ingredient.raw)
+      : ingredient;
+  return convertIngredient(
+    {
+      ...parsed,
+      section: ingredient.section,
+    },
+    system,
+  );
+}
+
+export function useRecipeScale(recipe: Recipe, unitSystem: UnitSystem = "original") {
   const [servings, setServings] = useState(recipe.servings);
-  const [haveId, setHaveId] = useState("");
+  const [haveIndex, setHaveIndex] = useState<number | null>(null);
   const [haveAmount, setHaveAmount] = useState("");
 
-  const scalable = recipe.ingredients.filter((item) => item.amount != null);
-  const selected = scalable.find((item) => (item.raw || item.name) === haveId);
+  const scalable = recipe.ingredients
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => {
+      const parsed =
+        item.raw && item.raw.trim() ? parseIngredient(item.raw) : item;
+      return parsed.amount != null;
+    });
+  const selectedEntry =
+    haveIndex == null ? null : scalable.find((entry) => entry.index === haveIndex) ?? null;
+  const selected = selectedEntry?.item ?? null;
+  const selectedDisplay = selected
+    ? displayIngredientForScale(selected, unitSystem)
+    : null;
   const factorFromHave = selected
-    ? scaleFromHave(selected, Number(haveAmount.replace(",", ".")))
+    ? scaleFromHave(selected, Number(haveAmount.replace(",", ".")), unitSystem)
     : null;
   const factor = factorFromHave ?? scaleServings(recipe.servings, servings);
   const shownServings = factorFromHave
@@ -27,15 +60,17 @@ export function useRecipeScale(recipe: Recipe) {
   return {
     servings,
     setServings,
-    haveId,
-    setHaveId,
+    haveIndex,
+    setHaveIndex,
     haveAmount,
     setHaveAmount,
     scalable,
     selected,
+    selectedDisplay,
     factorFromHave,
     factor,
     shownServings,
+    unitSystem,
   };
 }
 
@@ -47,6 +82,7 @@ export function RecipeScaler({
   scale: ReturnType<typeof useRecipeScale>;
 }) {
   const { t } = useLocale();
+  const unitLabel = displayUnit(scale.selectedDisplay?.unit ?? null);
 
   return (
     <div className="space-y-4">
@@ -95,31 +131,47 @@ export function RecipeScaler({
             <Label htmlFor="have-ing">{t("scaler.ingredient")}</Label>
             <select
               id="have-ing"
-              value={scale.haveId}
-              onChange={(event) => scale.setHaveId(event.target.value)}
+              value={scale.haveIndex == null ? "" : String(scale.haveIndex)}
+              onChange={(event) => {
+                const value = event.target.value;
+                scale.setHaveIndex(value ? Number(value) : null);
+              }}
               className="border-input bg-background text-foreground h-11 w-full rounded-xl border px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50 dark:bg-input/30"
             >
               <option value="" className="bg-background text-foreground">
                 {t("scaler.choose")}
               </option>
-              {scale.scalable.map((item) => (
-                <option
-                  key={item.raw || item.name}
-                  value={item.raw || item.name}
-                  className="bg-background text-foreground"
-                >
-                  {item.name} {item.unit ? `(${item.unit})` : ""}
-                </option>
-              ))}
+              {scale.scalable.map(({ item, index }) => {
+                const displayed = displayIngredientForScale(item, scale.unitSystem);
+                const optionUnit = displayUnit(displayed.unit);
+                return (
+                  <option
+                    key={index}
+                    value={String(index)}
+                    className="bg-background text-foreground"
+                  >
+                    {item.section ? `${item.section}: ` : ""}
+                    {displayed.name}
+                    {optionUnit ? ` (${optionUnit})` : ""}
+                  </option>
+                );
+              })}
             </select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="have-amt">{t("scaler.amount")}</Label>
+            <Label htmlFor="have-amt">
+              {t("scaler.amount")}
+              {unitLabel ? ` (${unitLabel})` : ""}
+            </Label>
             <Input
               id="have-amt"
               value={scale.haveAmount}
               onChange={(event) => scale.setHaveAmount(event.target.value)}
-              placeholder={scale.selected?.amount != null ? String(scale.selected.amount) : "0"}
+              placeholder={
+                scale.selectedDisplay?.amount != null
+                  ? String(scale.selectedDisplay.amount)
+                  : "0"
+              }
               className="h-11 rounded-xl text-base"
             />
           </div>

@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { CheckCircleIcon, FireIcon } from "@phosphor-icons/react";
 import { useLocale } from "@/components/locale-provider";
-import { formatIngredient } from "@/lib/ingredients";
+import { formatIngredient, groupIngredients } from "@/lib/ingredients";
+import type { UnitSystem } from "@/lib/units";
 import type { Recipe } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function useCookChecklist(recipe: Recipe, onCooked: () => number) {
   const [checkedIngredients, setCheckedIngredients] = useState(() =>
@@ -62,41 +64,85 @@ export function IngredientsChecklist({
   recipe,
   factor,
   cook,
+  unitSystem = "original",
+  onUnitSystemChange,
 }: {
   recipe: Recipe;
   factor: number;
   cook: CookChecklistState;
+  unitSystem?: UnitSystem;
+  onUnitSystemChange?: (system: UnitSystem) => void;
 }) {
   const { t } = useLocale();
+  const groups = groupIngredients(recipe.ingredients);
 
   return (
     <section>
-      <h2 className="font-heading text-2xl">{t("cook.ingredients")}</h2>
-      <p className="text-muted-foreground mt-1 text-sm">{t("cook.ingredientsHint")}</p>
-      <ul className="mt-3 divide-y divide-border rounded-3xl border border-border bg-card">
-        {recipe.ingredients.map((ingredient, index) => (
-          <li key={`${ingredient.raw}-${index}`}>
-            <label className="flex cursor-pointer items-start gap-3 px-4 py-3">
-              <Checkbox
-                checked={cook.checkedIngredients[index] ?? false}
-                onCheckedChange={(checked) =>
-                  cook.toggleIngredient(index, Boolean(checked))
-                }
-                className="mt-0.5 rounded-md"
-              />
-              <span
-                className={
-                  cook.checkedIngredients[index]
-                    ? "text-muted-foreground line-through"
-                    : ""
-                }
-              >
-                {formatIngredient(ingredient, factor)}
-              </span>
-            </label>
-          </li>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="font-heading text-2xl">{t("cook.ingredients")}</h2>
+          <p className="text-muted-foreground mt-1 text-sm">{t("cook.ingredientsHint")}</p>
+        </div>
+        {onUnitSystemChange ? (
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                ["original", "units.asWritten"],
+                ["imperial", "units.imperial"],
+              ] as const
+            ).map(([system, key]) => {
+              const active = unitSystem === system;
+              return (
+                <Button
+                  key={system}
+                  type="button"
+                  size="sm"
+                  variant={active ? "default" : "outline"}
+                  className="rounded-full"
+                  onClick={() => onUnitSystemChange(system)}
+                >
+                  {t(key)}
+                </Button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+      <div className="mt-3 space-y-4">
+        {groups.map((group) => (
+          <div key={group.section ?? "__main__"}>
+            {group.section ? (
+              <h3 className="font-heading mb-2 text-lg tracking-tight">{group.section}</h3>
+            ) : null}
+            <ul className="divide-y divide-border rounded-3xl border border-border bg-card">
+              {group.items.map(({ ingredient, index }) => (
+                <li key={`${ingredient.raw}-${index}`}>
+                  <label className="flex cursor-pointer items-start gap-3 px-4 py-3">
+                    <Checkbox
+                      checked={cook.checkedIngredients[index] ?? false}
+                      onCheckedChange={(checked) =>
+                        cook.toggleIngredient(index, Boolean(checked))
+                      }
+                      className="mt-0.5 rounded-md"
+                    />
+                    <span
+                      className={cn(
+                        cook.checkedIngredients[index] &&
+                          "text-muted-foreground line-through",
+                      )}
+                    >
+                      {formatIngredient(ingredient, factor, unitSystem)}
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
         ))}
-      </ul>
+      </div>
+      {onUnitSystemChange ? (
+        <p className="text-muted-foreground mt-2 text-xs">{t("units.hint")}</p>
+      ) : null}
     </section>
   );
 }

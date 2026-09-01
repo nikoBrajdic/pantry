@@ -1,5 +1,10 @@
-import { parseIngredient } from "./ingredients";
-import type { ExtractedRecipe, Nutrition, Pace } from "./types";
+import {
+  isIngredientSectionHeader,
+  metricizeIngredient,
+  normalizeIngredientSection,
+  parseIngredient,
+} from "./ingredients";
+import type { ExtractedRecipe, Ingredient, Nutrition, Pace } from "./types";
 
 const ISO_DURATION = /P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?/i;
 
@@ -207,10 +212,9 @@ function recipeFromNode(node: Record<string, unknown>, sourceUrl: string): Extra
   }
 
   const title = textOf(node.name);
-  const ingredients = asArray(node.recipeIngredient)
-    .map(textOf)
-    .filter(Boolean)
-    .map(parseIngredient);
+  const ingredients = parseIngredientBlocks(
+    asArray(node.recipeIngredient).map(textOf).filter(Boolean),
+  );
   const instructions = flattenInstructions(node.recipeInstructions);
 
   if (!title && ingredients.length === 0) return null;
@@ -241,11 +245,7 @@ function fallbackFromHtml(html: string, sourceUrl: string): ExtractedRecipe | nu
   const image =
     html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)?.[1];
 
-  const ingredientBlocks = [
-    ...html.matchAll(
-      /itemprop=["']recipeIngredient["'][^>]*>([^<]+)</gi,
-    ),
-  ].map((match) => decodeEntities(match[1]).trim());
+  const ingredientBlocks = extractIngredientLinesFromHtml(html);
 
   const instructionBlocks = [
     ...html.matchAll(/itemprop=["']recipeInstructions["'][^>]*>([\s\S]*?)<\/(?:p|li|div|span)>/gi),
@@ -260,12 +260,119 @@ function fallbackFromHtml(html: string, sourceUrl: string): ExtractedRecipe | nu
     sourceUrl,
     imageUrl: image ? resolveUrl(image, sourceUrl) : undefined,
     servings: 4,
-    ingredients: ingredientBlocks.map(parseIngredient),
+    ingredients: parseIngredientBlocks(ingredientBlocks),
     instructions: instructionBlocks,
   };
 }
 
+/** Prefer grouped HTML (heading + items); fall back to flat recipeIngredient nodes. */
+function extractIngredientLinesFromHtml(html: string): string[] {
+  const grouped = extractGroupedIngredientLines(html);
+  if (grouped.length > 0) return grouped;
+
+  return [
+    ...html.matchAll(/itemprop=["']recipeIngredient["'][^>]*>([^<]+)</gi),
+  ]
+    .map((match) => decodeEntities(match[1]).trim())
+    .filter(Boolean);
+}
+
+/** Collapse tag-replacement spaces so "salt , pepper" → "salt, pepper". */
+function tidyPlainText(value: string) {
+  return value
+    .replace(/\s+/g, " ")
+    .replace(/\s+([,.;:!?)\]}])/g, "$1")
+    .replace(/([([{])\s+/g, "$1")
+    .trim();
+}
+
+function stripTags(value: string) {
+  return tidyPlainText(
+    decodeEntities(value.replace(/<[^>]+>/g, " ")).replace(
+      /[\u2610\u2611\u2612\u25A0-\u25A3\u25FB\u25FC\u2B1B\u2B1C□■☐☑☒]/g,
+      " ",
+    ),
+  );
+}
+
+function extractGroupedIngredientLines(html: string): string[] {
+  const lines: string[] = [];
+
+  const groupBlocks = [
+    ...html.matchAll(
+      /<(?:div|section)[^>]*class=["'][^"']*ingredient(?:s)?-group[^"']*["'][^>]*>([\s\S]*?)<\/(?:div|section)>/gi,
+    ),
+  ];
+
+  for (const match of groupBlocks) {
+    const block = match[1] ?? "";
+    const nameHtml =
+      block.match(
+        /<(?:h[1-6]|p|div|span|strong)[^>]*class=["'][^"']*(?:group-name|group__name|ingredient-group-name|ingredients-group-name)[^"']*["'][^>]*>([\s\S]*?)<\/(?:h[1-6]|p|div|span|strong)>/i,
+      )?.[1] ??
+      block.match(/<(?:h[1-6])[^>]*>([\s\S]*?)<\/(?:h[1-6])>/i)?.[1];
+
+    const heading = nameHtml ? stripTags(nameHtml) : "";
+    if (heading) {
+      lines.push(/[:：]\s*$/.test(heading) ? heading : `${heading}:`);
+    }
+
+    const itempropItems = [
+      ...block.matchAll(/itemprop=["']recipeIngredient["'][^>]*>([^<]+)</gi),
+    ]
+      .map((item) => decodeEntities(item[1]).trim())
+      .filter(Boolean);
+
+    if (itempropItems.length > 0) {
+      lines.push(...itempropItems);
+      continue;
+    }
+
+    const listItems = [...block.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)]
+      .map((item) => stripTags(item[1] ?? ""))
+      .filter((text) => text && !isIngredientSectionHeader(text));
+
+    lines.push(...listItems);
+  }
+
+  // Need at least one real ingredient, not only headings
+  const hasIngredient = lines.some((line) => !isIngredientSectionHeader(line));
+  return hasIngredient ? lines : [];
+}
+
+function parseIngredientBlocks(blocks: string[]): Ingredient[] {
+  let currentSection: string | undefined;
+  const ingredients: Ingredient[] = [];
+
+  for (const block of blocks) {
+    const trimmed = block.trim();
+    if (!trimmed) continue;
+    if (isIngredientSectionHeader(trimmed)) {
+      currentSection = normalizeIngredientSection(trimmed);
+      continue;
+    }
+    const parsed = metricizeIngredient(parseIngredient(trimmed));
+    // Header-like lines without amounts sometimes slip through as bare names
+    // (e.g. "For the sauce"). Do not append ":" — that makes every bare
+    // ingredient like "basmati rice" look like a section title.
+    if (
+      parsed.amount == null &&
+      !parsed.unit &&
+      isIngredientSectionHeader(parsed.name)
+    ) {
+      currentSection = normalizeIngredientSection(parsed.name);
+      continue;
+    }
+    ingredients.push(
+      currentSection ? { ...parsed, section: currentSection } : parsed,
+    );
+  }
+
+  return ingredients;
+}
+
 export function extractRecipeFromHtml(html: string, sourceUrl: string): ExtractedRecipe {
+  const groupedLines = extractGroupedIngredientLines(html);
   const nodes: Record<string, unknown>[] = [];
   for (const block of collectJsonLd(html)) {
     walkNodes(block, nodes);
@@ -273,7 +380,16 @@ export function extractRecipeFromHtml(html: string, sourceUrl: string): Extracte
 
   for (const node of nodes) {
     const recipe = recipeFromNode(node, sourceUrl);
-    if (recipe && recipe.ingredients.length > 0) return recipe;
+    if (recipe && recipe.ingredients.length > 0) {
+      // JSON-LD usually omits "For the sauce" headings; HTML groups keep them.
+      if (groupedLines.length > 0) {
+        return {
+          ...recipe,
+          ingredients: parseIngredientBlocks(groupedLines),
+        };
+      }
+      return recipe;
+    }
   }
 
   const fallback = fallbackFromHtml(html, sourceUrl);

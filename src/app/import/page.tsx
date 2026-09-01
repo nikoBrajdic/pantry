@@ -14,7 +14,7 @@ import {
   paceMessageKey,
   tagMessageKey,
 } from "@/lib/i18n";
-import { formatIngredient } from "@/lib/ingredients";
+import { formatIngredient, groupIngredients } from "@/lib/ingredients";
 import { decodeRecipeShare } from "@/lib/share";
 import { newId } from "@/lib/storage";
 import { DIFFICULTY_OPTIONS, PACE_OPTIONS, formatTagDisplay } from "@/lib/tags";
@@ -169,13 +169,27 @@ function ImportInner() {
 
           <section>
             <h2 className="font-heading text-2xl">{t("import.ingredients")}</h2>
-            <ul className="mt-3 divide-y divide-border rounded-2xl border border-border">
-              {recipe.ingredients.map((ingredient, index) => (
-                <li key={`${ingredient.raw}-${index}`} className="px-4 py-2.5 text-sm">
-                  {formatIngredient(ingredient, 1)}
-                </li>
+            <div className="mt-3 space-y-4">
+              {groupIngredients(recipe.ingredients).map((group) => (
+                <div key={group.section ?? "__main__"}>
+                  {group.section ? (
+                    <h3 className="font-heading mb-2 text-lg tracking-tight">
+                      {group.section}
+                    </h3>
+                  ) : null}
+                  <ul className="divide-y divide-border rounded-2xl border border-border">
+                    {group.items.map(({ ingredient, index }) => (
+                      <li
+                        key={`${ingredient.raw}-${index}`}
+                        className="px-4 py-2.5 text-sm"
+                      >
+                        {formatIngredient(ingredient, 1)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
+            </div>
           </section>
 
           <section>

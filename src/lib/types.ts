@@ -7,6 +7,8 @@ export type Ingredient = {
   amount: number | null;
   unit: string | null;
   name: string;
+  /** Optional sublist title, e.g. "Sauce" / "For the glaze". */
+  section?: string;
 };
 
 /** Nutrition for the recipe as written (original servings). Scale by servings factor when displaying. */

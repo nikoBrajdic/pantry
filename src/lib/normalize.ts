@@ -1,5 +1,5 @@
 import type { Nutrition, Recipe } from "./types";
-import { parseIngredient } from "./ingredients";
+import { formatIngredient, parseIngredient } from "./ingredients";
 import { normalizeTagSlug } from "./tag-normalize";
 
 export function normalizeNutrition(value: unknown): Nutrition | undefined {
@@ -44,9 +44,20 @@ export function normalizeRecipe(recipe: Recipe): Recipe {
     ...recipe,
     list: recipe.list === "keeper" ? "keeper" : "wishlist",
     timesCooked: Number.isFinite(recipe.timesCooked) ? recipe.timesCooked : 0,
-    ingredients: (recipe.ingredients ?? []).map((ingredient) =>
-      ingredient.raw?.trim() ? parseIngredient(ingredient.raw) : ingredient,
-    ),
+    ingredients: (recipe.ingredients ?? []).map((ingredient) => {
+      const parsed = ingredient.raw?.trim()
+        ? parseIngredient(ingredient.raw)
+        : ingredient;
+      const section = ingredient.section?.trim();
+      const withSection = section
+        ? { ...parsed, section }
+        : { ...parsed, section: undefined };
+      // Keep stored raw in decimal form for easier editing / mental math.
+      return {
+        ...withSection,
+        raw: formatIngredient(withSection, 1, "original"),
+      };
+    }),
     instructions: recipe.instructions ?? [],
     tags,
     nutrition: normalizeNutrition(recipe.nutrition),

@@ -241,6 +241,11 @@ export const en = {
   "cook.again": "Cook again",
   "cook.hint": "Check every ingredient and every step to log a cook.",
 
+  "units.asWritten": "As written",
+  "units.imperial": "Imperial",
+  "units.hint":
+    "Converts grams, kilos, millilitres, and litres to ounces, pounds, and fluid ounces. Teaspoons, tablespoons, and cups stay as written.",
+
   "scaler.servingsQuestion": "How many servings?",
   "scaler.servings": "servings",
   "scaler.originalBlurb":
@@ -292,7 +297,7 @@ export const en = {
   "form.nextDayPlaceholder": "e.g. Must sit in the fridge overnight.",
   "form.ingredients": "Ingredients",
   "form.ingredientsHint":
-    "One ingredient per line, with the amount. e.g. 200 g flour",
+    "One ingredient per line, with the amount. e.g. 200 g flour. For parts of a recipe, add a heading line like “For the sauce:” before that group.",
   "form.method": "Method",
   "form.methodHint": "One step per line.",
   "form.notes": "What I changed",

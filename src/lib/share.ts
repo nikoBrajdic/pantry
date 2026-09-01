@@ -10,7 +10,7 @@ const LIST: RecipeList[] = ["keeper", "wishlist"];
 type CompactShare = [
   string, // title
   number, // servings
-  Array<[string, number | null, string | null, string]>, // ingredients
+  Array<[string, number | null, string | null, string, string?]>, // ingredients (+ optional section)
   string[], // instructions
   string[], // tags
   number, // difficulty idx
@@ -39,6 +39,7 @@ function toCompact(recipe: Recipe): CompactShare {
       item.amount,
       item.unit,
       item.name,
+      item.section ?? "",
     ]),
     recipe.instructions,
     recipe.tags,
@@ -56,12 +57,16 @@ function toCompact(recipe: Recipe): CompactShare {
 
 function fromCompact(data: CompactShare): Recipe {
   const now = new Date().toISOString();
-  const ingredients: Ingredient[] = (data[2] ?? []).map(([raw, amount, unit, name]) => ({
-    raw,
-    amount,
-    unit,
-    name,
-  }));
+  const ingredients: Ingredient[] = (data[2] ?? []).map((row) => {
+    const [raw, amount, unit, name, section] = row;
+    return {
+      raw,
+      amount,
+      unit,
+      name,
+      ...(section ? { section } : {}),
+    };
+  });
   return normalizeRecipe({
     id: newId(),
     title: data[0] || "Recipe",

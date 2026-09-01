@@ -46,6 +46,7 @@ import {
   tagMessageKey,
 } from "@/lib/i18n";
 import { shareUrlFor } from "@/lib/share";
+import type { UnitSystem } from "@/lib/units";
 import { cn } from "@/lib/utils";
 
 const LG_QUERY = "(min-width: 1024px)";
@@ -134,7 +135,8 @@ function RecipeBody({
 }) {
   const { t } = useLocale();
   const { household, kitchens, copyRecipeToKitchen } = useRecipes();
-  const scale = useRecipeScale(recipe);
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>("original");
+  const scale = useRecipeScale(recipe, unitSystem);
   const cook = useCookChecklist(recipe, onCooked);
   const difficulty = DIFFICULTY_OPTIONS.find((item) => item.id === recipe.difficulty);
   const pace = PACE_OPTIONS.find((item) => item.id === recipe.pace);
@@ -345,7 +347,18 @@ function RecipeBody({
   }
 
   function renderIngredients() {
-    return <IngredientsChecklist recipe={recipe} factor={scale.factor} cook={cook} />;
+    return (
+      <IngredientsChecklist
+        recipe={recipe}
+        factor={scale.factor}
+        cook={cook}
+        unitSystem={unitSystem}
+        onUnitSystemChange={(system) => {
+          setUnitSystem(system);
+          scale.setHaveAmount("");
+        }}
+      />
+    );
   }
 
   function renderMethod() {

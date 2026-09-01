@@ -1,4 +1,4 @@
-import { parseIngredientList } from "./ingredients";
+import { formatIngredientsText, parseIngredientList } from "./ingredients";
 import { newId } from "./storage";
 import type {
   Difficulty,
@@ -53,7 +53,7 @@ export function draftFromExtracted(extracted: ExtractedRecipe): RecipeDraft {
     sourceUrl: extracted.sourceUrl,
     imageUrl: extracted.imageUrl ?? "",
     servings: extracted.servings || 4,
-    ingredientsText: extracted.ingredients.map((item) => item.raw || item.name).join("\n"),
+    ingredientsText: formatIngredientsText(extracted.ingredients),
     instructionsText: extracted.instructions.join("\n"),
     pace: extracted.suggestedPace ?? "quick",
     nutrition: extracted.nutrition,
@@ -67,7 +67,7 @@ export function draftFromRecipe(recipe: Recipe): RecipeDraft {
     sourceUrl: recipe.sourceUrl ?? "",
     imageUrl: recipe.imageUrl ?? "",
     servings: recipe.servings,
-    ingredientsText: recipe.ingredients.map((item) => item.raw || item.name).join("\n"),
+    ingredientsText: formatIngredientsText(recipe.ingredients),
     instructionsText: recipe.instructions.join("\n"),
     tags: recipe.tags,
     difficulty: recipe.difficulty,

@@ -247,6 +247,11 @@ export const hr: Record<MessageKey, string> = {
   "cook.again": "Kuhaj opet",
   "cook.hint": "Označi svaki sastojak i svaki korak da zabilježiš kuhanje.",
 
+  "units.asWritten": "Kao što piše",
+  "units.imperial": "Imperijalni",
+  "units.hint":
+    "Pretvara grame, kilograme, mililitre i litre u unce, funte i tekuće unce. Žličice, žlice i šalice ostaju kako pišu.",
+
   "scaler.servingsQuestion": "Koliko porcija?",
   "scaler.servings": "porcija",
   "scaler.originalBlurb":
@@ -297,7 +302,7 @@ export const hr: Record<MessageKey, string> = {
   "form.nextDayPlaceholder": "npr. Mora stajati u frižideru preko noći.",
   "form.ingredients": "Sastojci",
   "form.ingredientsHint":
-    "Jedan sastojak po retku, s količinom. npr. 200 g brašna",
+    "Jedan sastojak po retku, s količinom. npr. 200 g brašna. Za dijelove recepta dodaj naslovni redak poput „Za umak:“ prije te grupe.",
   "form.method": "Postupak",
   "form.methodHint": "Jedan korak po retku.",
   "form.notes": "Što sam promijenio/la",
