@@ -1,12 +1,16 @@
-const CACHE = "pantry-shell-v1";
+const CACHE = "pantry-shell-v2";
 const PRECACHE = ["/", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
+  // Don't fail the whole SW install if one precache URL errors (e.g. `/` auth quirks).
   event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE))
-      .then(() => self.skipWaiting()),
+    (async () => {
+      const cache = await caches.open(CACHE);
+      await Promise.all(
+        PRECACHE.map((url) => cache.add(url).catch(() => undefined)),
+      );
+      await self.skipWaiting();
+    })(),
   );
 });
 

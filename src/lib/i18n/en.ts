@@ -7,6 +7,11 @@ export const en = {
   "nav.signOut": "Sign out",
   "nav.tagline": "Paste a link. Keep the recipe. Cook it again.",
 
+  "pwa.title": "Install Pantry",
+  "pwa.blurb": "Add it to your home screen for quicker cooking access.",
+  "pwa.install": "Install",
+  "pwa.dismiss": "Not now",
+
   "theme.trigger": "Theme",
   "theme.title": "Appearance",
   "theme.description":

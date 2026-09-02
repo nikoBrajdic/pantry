@@ -9,6 +9,11 @@ export const hr: Record<MessageKey, string> = {
   "nav.signOut": "Odjava",
   "nav.tagline": "Zalijepi link. Spremi recept. Skuhaj opet.",
 
+  "pwa.title": "Instaliraj Pantry",
+  "pwa.blurb": "Dodaj na početni zaslon za brži pristup dok kuhaš.",
+  "pwa.install": "Instaliraj",
+  "pwa.dismiss": "Ne sada",
+
   "theme.trigger": "Tema",
   "theme.title": "Izgled",
   "theme.description":

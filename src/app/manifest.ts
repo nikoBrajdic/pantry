@@ -6,6 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Pantry",
     description:
       "Paste a recipe link, pull ingredients and steps, scale servings, and share the kitchen.",
+    id: "/",
     start_url: "/",
     scope: "/",
     display: "standalone",
