@@ -189,7 +189,12 @@ function RecipeBody({
       <div className="overflow-hidden rounded-3xl border border-border bg-card">
         {recipe.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={recipe.imageUrl} alt="" className="h-56 w-full object-cover sm:h-72" />
+          <img
+            src={recipe.imageUrl}
+            alt=""
+            className="h-56 w-full object-cover sm:h-72"
+            style={{ objectPosition: recipe.imagePosition ?? "50% 50%" }}
+          />
         ) : null}
         <div className="space-y-4 p-5 sm:p-6">
           <div>

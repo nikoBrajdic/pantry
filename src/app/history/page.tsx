@@ -37,8 +37,11 @@ export default function HistoryPage() {
   }
 
   function imageFor(log: CookLog) {
-    if (log.recipeImageUrl) return log.recipeImageUrl;
-    return recipes.find((recipe) => recipe.id === log.recipeId)?.imageUrl;
+    const recipe = recipes.find((item) => item.id === log.recipeId);
+    return {
+      src: log.recipeImageUrl || recipe?.imageUrl,
+      position: recipe?.imagePosition,
+    };
   }
 
   async function openLog(log: CookLog) {
@@ -98,9 +101,16 @@ export default function HistoryPage() {
                           className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl text-left disabled:opacity-60"
                         >
                           <span className="bg-accent size-16 shrink-0 overflow-hidden rounded-2xl">
-                            {image ? (
+                            {image.src ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={image} alt="" className="size-16 object-cover" />
+                              <img
+                                src={image.src}
+                                alt=""
+                                className="size-16 object-cover"
+                                style={{
+                                  objectPosition: image.position ?? "50% 50%",
+                                }}
+                              />
                             ) : (
                               <span className="text-primary/50 grid size-16 place-items-center font-heading text-2xl">
                                 {log.recipeTitle.slice(0, 1)}

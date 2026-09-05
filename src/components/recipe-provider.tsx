@@ -32,9 +32,11 @@ type RecipeContextValue = {
   syncState: SyncState;
   upsertRecipe: (recipe: Recipe) => void;
   removeRecipe: (id: string) => void;
+  removeRecipes: (ids: string[]) => void;
   markCooked: (id: string) => number;
   removeCookLog: (id: string) => void;
   moveToList: (id: string, list: RecipeList) => void;
+  moveRecipesToList: (ids: string[], list: RecipeList) => void;
   createHousehold: () => Promise<string>;
   joinHousehold: (code: string) => Promise<void>;
   switchHousehold: (code: string) => Promise<void>;
@@ -163,6 +165,15 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     [apply],
   );
 
+  const removeRecipes = useCallback(
+    (ids: string[]) => {
+      if (ids.length === 0) return;
+      const idSet = new Set(ids);
+      apply((prev) => prev.filter((item) => !idSet.has(item.id)));
+    },
+    [apply],
+  );
+
   const markCooked = useCallback(
     (id: string) => {
       const current = recipesRef.current.find((item) => item.id === id);
@@ -243,6 +254,20 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       apply((prev) =>
         prev.map((item) =>
           item.id === id ? { ...item, list, updatedAt: new Date().toISOString() } : item,
+        ),
+      );
+    },
+    [apply],
+  );
+
+  const moveRecipesToList = useCallback(
+    (ids: string[], list: RecipeList) => {
+      if (ids.length === 0) return;
+      const idSet = new Set(ids);
+      const now = new Date().toISOString();
+      apply((prev) =>
+        prev.map((item) =>
+          idSet.has(item.id) ? { ...item, list, updatedAt: now } : item,
         ),
       );
     },
@@ -389,9 +414,11 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       syncState,
       upsertRecipe,
       removeRecipe,
+      removeRecipes,
       markCooked,
       removeCookLog,
       moveToList,
+      moveRecipesToList,
       createHousehold,
       joinHousehold,
       switchHousehold,
@@ -410,9 +437,11 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       syncState,
       upsertRecipe,
       removeRecipe,
+      removeRecipes,
       markCooked,
       removeCookLog,
       moveToList,
+      moveRecipesToList,
       createHousehold,
       joinHousehold,
       switchHousehold,

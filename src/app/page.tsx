@@ -1,13 +1,29 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { FireIcon, CaretDownIcon, PlusCircleIcon } from "@phosphor-icons/react";
+import {
+  BookmarkSimpleIcon,
+  CookingPotIcon,
+  FireIcon,
+  CaretDownIcon,
+  PlusCircleIcon,
+  TrashIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 import { RecipeCard } from "@/components/recipe-card";
 import { useLocale } from "@/components/locale-provider";
 import { useRecipes } from "@/components/recipe-provider";
 import { ShelfLoading } from "@/components/shelf-loading";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DIFFICULTY_OPTIONS,
   INGREDIENT_FILTERS,
@@ -26,7 +42,17 @@ import type { Difficulty, Pace } from "@/lib/types";
 type Shelf = "all" | "keepers" | "wishlist" | "hits";
 
 export default function LibraryPage() {
-  const { recipes, ready, syncState, household, kitchens, switchHousehold } = useRecipes();
+  const {
+    recipes,
+    ready,
+    syncState,
+    household,
+    kitchens,
+    switchHousehold,
+    removeRecipes,
+    moveRecipesToList,
+    copyRecipeToKitchen,
+  } = useRecipes();
   const { t } = useLocale();
   const [shelf, setShelf] = useState<Shelf>("all");
   const [difficulty, setDifficulty] = useState<Difficulty | "">("");
@@ -35,6 +61,13 @@ export default function LibraryPage() {
   const [ingredient, setIngredient] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [kitchenOpen, setKitchenOpen] = useState(false);
+  const [kitchenBusy, setKitchenBusy] = useState(false);
+  const [actionMessage, setActionMessage] = useState("");
+
+  const selecting = selectedIds.length > 0;
 
   const counts = useMemo(
     () => ({
@@ -68,6 +101,16 @@ export default function LibraryPage() {
   const hasFilters = Boolean(difficulty || pace || meal || ingredient);
   const activeFilterCount = [difficulty, pace, meal, ingredient].filter(Boolean).length;
 
+  const kitchenTargets = useMemo(
+    () => [
+      ...(household ? [{ code: "", name: t("recipe.personalKitchen") }] : []),
+      ...kitchens
+        .filter((item) => item.code !== household)
+        .map((item) => ({ code: item.code, name: item.name })),
+    ],
+    [household, kitchens, t],
+  );
+
   const shelfTitleKey: MessageKey =
     shelf === "all"
       ? "library.title.all"
@@ -76,6 +119,24 @@ export default function LibraryPage() {
         : shelf === "wishlist"
           ? "library.title.wishlist"
           : "library.title.keepers";
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const onChange = () => {
+      if (mq.matches) setSelectedIds([]);
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!selecting) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setSelectedIds([]);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selecting]);
 
   if (!ready) {
     return <ShelfLoading />;
@@ -86,13 +147,69 @@ export default function LibraryPage() {
     setSwitching(true);
     try {
       await switchHousehold(code);
+      setSelectedIds([]);
     } finally {
       setSwitching(false);
     }
   }
 
+  function clearSelection() {
+    setSelectedIds([]);
+    setActionMessage("");
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  }
+
+  function enterSelect(id: string) {
+    setActionMessage("");
+    setSelectedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  }
+
+  function confirmDelete() {
+    removeRecipes(selectedIds);
+    setDeleteOpen(false);
+    clearSelection();
+  }
+
+  function moveToKeepers() {
+    const count = selectedIds.length;
+    moveRecipesToList(selectedIds, "keeper");
+    setSelectedIds([]);
+    setActionMessage(t("library.bulk.movedKeepers", { count }));
+  }
+
+  async function copySelectedToKitchen(code: string, name: string) {
+    setKitchenBusy(true);
+    let ok = 0;
+    let failed = 0;
+    for (const id of selectedIds) {
+      try {
+        await copyRecipeToKitchen(id, code);
+        ok += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    setKitchenBusy(false);
+    setKitchenOpen(false);
+    setSelectedIds([]);
+    if (ok > 0 && failed === 0) {
+      setActionMessage(t("library.bulk.copiedKitchen", { count: ok, name }));
+    } else if (ok > 0) {
+      setActionMessage(
+        t("library.bulk.copiedKitchenPartial", { ok, failed, name }),
+      );
+    } else {
+      setActionMessage(t("library.bulk.copiedKitchenFailed"));
+    }
+  }
+
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6", selecting && "pb-24 md:pb-0")}>
       {syncState === "error" && recipes.length === 0 ? (
         <div className="rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">
           {t("library.syncError")}
@@ -109,6 +226,10 @@ export default function LibraryPage() {
           {t("library.add")}
         </Button>
       </div>
+
+      {actionMessage ? (
+        <p className="text-primary text-sm">{actionMessage}</p>
+      ) : null}
 
       {kitchens.length > 0 ? (
         <div className="space-y-2">
@@ -301,10 +422,133 @@ export default function LibraryPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((recipe) => (
-            <RecipeCard key={recipe.id} recipe={recipe} />
+            <RecipeCard
+              key={recipe.id}
+              recipe={recipe}
+              selecting={selecting}
+              selected={selectedIds.includes(recipe.id)}
+              onEnterSelect={() => enterSelect(recipe.id)}
+              onToggleSelect={() => toggleSelected(recipe.id)}
+            />
           ))}
         </div>
       )}
+
+      {selecting ? (
+        <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-50 px-3 md:hidden">
+          <div className="mx-auto flex max-w-lg items-center gap-2 rounded-2xl border border-border bg-card p-2 shadow-lg">
+            <p className="text-muted-foreground min-w-0 flex-1 truncate px-2 text-sm">
+              {t("library.bulk.selected", { count: selectedIds.length })}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="rounded-full"
+              aria-label={t("library.bulk.keepers")}
+              onClick={moveToKeepers}
+            >
+              <BookmarkSimpleIcon className="size-4" />
+            </Button>
+            {kitchenTargets.length > 0 ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="rounded-full"
+                aria-label={t("library.bulk.kitchen")}
+                onClick={() => setKitchenOpen(true)}
+              >
+                <CookingPotIcon className="size-4" />
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              className="rounded-full"
+              aria-label={t("library.bulk.delete")}
+              onClick={() => setDeleteOpen(true)}
+            >
+              <TrashIcon className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="size-8 shrink-0 rounded-full"
+              aria-label={t("library.bulk.cancel")}
+              onClick={clearSelection}
+            >
+              <XIcon className="size-4" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="rounded-3xl sm:max-w-md" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="font-heading text-xl tracking-tight">
+              {t("library.bulk.deleteTitle")}
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              {t("library.bulk.deleteBlurb", { count: selectedIds.length })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={() => setDeleteOpen(false)}
+            >
+              {t("library.bulk.cancel")}
+            </Button>
+            <Button variant="destructive" className="rounded-full" onClick={confirmDelete}>
+              {t("library.bulk.deleteConfirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={kitchenOpen} onOpenChange={setKitchenOpen}>
+        <DialogContent className="rounded-3xl sm:max-w-md" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="font-heading text-xl tracking-tight">
+              {t("library.bulk.kitchenTitle")}
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              {t("library.bulk.kitchenBlurb", { count: selectedIds.length })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {kitchenTargets.map((item) => (
+              <button
+                key={item.code || "personal"}
+                type="button"
+                disabled={kitchenBusy}
+                onClick={() => void copySelectedToKitchen(item.code, item.name)}
+                className={cn(
+                  "flex w-full items-center rounded-2xl border border-border px-4 py-3 text-left text-sm font-medium",
+                  "hover:border-primary/40 hover:bg-primary/5 disabled:opacity-60",
+                )}
+              >
+                {item.name}
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="rounded-full"
+              disabled={kitchenBusy}
+              onClick={() => setKitchenOpen(false)}
+            >
+              {t("library.bulk.cancel")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

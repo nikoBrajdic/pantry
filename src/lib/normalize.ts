@@ -1,5 +1,6 @@
 import type { Nutrition, Recipe } from "./types";
 import { formatIngredient, parseIngredient } from "./ingredients";
+import { normalizeImagePosition } from "./image-position";
 import { normalizeTagSlug } from "./tag-normalize";
 
 export function normalizeNutrition(value: unknown): Nutrition | undefined {
@@ -44,6 +45,9 @@ export function normalizeRecipe(recipe: Recipe): Recipe {
     ...recipe,
     list: recipe.list === "keeper" ? "keeper" : "wishlist",
     timesCooked: Number.isFinite(recipe.timesCooked) ? recipe.timesCooked : 0,
+    imagePosition: recipe.imageUrl
+      ? normalizeImagePosition(recipe.imagePosition)
+      : undefined,
     ingredients: (recipe.ingredients ?? []).map((ingredient) => {
       const parsed = ingredient.raw?.trim()
         ? parseIngredient(ingredient.raw)

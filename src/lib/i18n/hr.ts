@@ -76,6 +76,23 @@ export const hr: Record<MessageKey, string> = {
   "library.kitchen": "Kuhinja",
   "library.personal": "Osobna",
   "library.switching": "Mijenjam kuhinju…",
+  "library.bulk.selected": "Odabrano: {count}",
+  "library.bulk.keepers": "Dodaj u keepere",
+  "library.bulk.kitchen": "Dodaj u kuhinju",
+  "library.bulk.delete": "Obriši",
+  "library.bulk.cancel": "Odustani",
+  "library.bulk.deleteTitle": "Obrisati odabrane recepte?",
+  "library.bulk.deleteBlurb":
+    "{count} recepata bit će uklonjeno iz ove kuhinje. Ovo se ne može poništiti.",
+  "library.bulk.deleteConfirm": "Obriši recepte",
+  "library.bulk.kitchenTitle": "Dodaj u drugu kuhinju",
+  "library.bulk.kitchenBlurb":
+    "Kopiraj {count} odabranih recepata u kuhinju koju odabereš.",
+  "library.bulk.movedKeepers": "Premješteno {count} u keepere.",
+  "library.bulk.copiedKitchen": "Kopirano {count} u {name}.",
+  "library.bulk.copiedKitchenPartial":
+    "Kopirano {ok} u {name}. {failed} nije uspjelo.",
+  "library.bulk.copiedKitchenFailed": "Nije uspjelo kopiranje tih recepata.",
 
   "card.keeper": "Skuhano",
   "card.wishlist": "Lista želja",
@@ -309,6 +326,8 @@ export const hr: Record<MessageKey, string> = {
   "form.source": "Izvorni link (opcionalno)",
   "form.photo": "Fotografija",
   "form.photoHint": "Povuče se s linka kad je moguće. Možeš je zamijeniti svojom.",
+  "form.photoReposition": "Povuci fotografiju da odabereš kadar.",
+  "form.photoReset": "Vrati kadar",
   "form.noPhoto": "Još nema fotografije",
   "form.upload": "Prenesi fotografiju",
   "form.removePhoto": "Ukloni fotografiju",

@@ -27,6 +27,8 @@ export type Recipe = {
   title: string;
   sourceUrl?: string;
   imageUrl?: string;
+  /** CSS object-position, e.g. "50% 30%". */
+  imagePosition?: string;
   servings: number;
   ingredients: Ingredient[];
   instructions: string[];

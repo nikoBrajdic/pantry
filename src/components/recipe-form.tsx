@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ImageIcon } from "@phosphor-icons/react";
 import { useLocale } from "@/components/locale-provider";
+import { ImagePositionEditor } from "@/components/image-position-editor";
 import { DIFFICULTY_OPTIONS, PACE_OPTIONS } from "@/lib/tags";
 import type { RecipeDraft } from "@/lib/draft";
 import { difficultyMessageKey, paceMessageKey } from "@/lib/i18n";
@@ -69,8 +70,14 @@ export function RecipeForm({
         <p className="text-muted-foreground text-sm">{t("form.photoHint")}</p>
         <div className="overflow-hidden rounded-3xl border border-border bg-card">
           {draft.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={draft.imageUrl} alt="" className="h-52 w-full object-cover" />
+            <ImagePositionEditor
+              src={draft.imageUrl}
+              position={draft.imagePosition}
+              onChange={(position) => set("imagePosition", position)}
+              className="h-52 w-full cursor-grab active:cursor-grabbing"
+              hint={t("form.photoReposition")}
+              resetLabel={t("form.photoReset")}
+            />
           ) : (
             <div className="text-muted-foreground flex h-40 items-center justify-center gap-2">
               <ImageIcon className="size-5" />
@@ -90,7 +97,11 @@ export function RecipeForm({
                   void readImageFile(file)
                     .then((url) => {
                       setImageError("");
-                      set("imageUrl", url);
+                      onChange({
+                        ...draft,
+                        imageUrl: url,
+                        imagePosition: "50% 50%",
+                      });
                     })
                     .catch((error: unknown) => {
                       setImageError(error instanceof Error ? error.message : "Upload failed.");
@@ -102,7 +113,9 @@ export function RecipeForm({
               <button
                 type="button"
                 className="rounded-full px-3 py-1.5 text-sm text-destructive"
-                onClick={() => set("imageUrl", "")}
+                onClick={() =>
+                  onChange({ ...draft, imageUrl: "", imagePosition: "50% 50%" })
+                }
               >
                 {t("form.removePhoto")}
               </button>

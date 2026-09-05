@@ -1,4 +1,5 @@
 import { formatIngredientsText, parseIngredientList } from "./ingredients";
+import { normalizeImagePosition } from "./image-position";
 import { newId } from "./storage";
 import type {
   Difficulty,
@@ -14,6 +15,7 @@ export type RecipeDraft = {
   title: string;
   sourceUrl: string;
   imageUrl: string;
+  imagePosition: string;
   servings: number;
   ingredientsText: string;
   instructionsText: string;
@@ -32,6 +34,7 @@ export function emptyDraft(): RecipeDraft {
     title: "",
     sourceUrl: "",
     imageUrl: "",
+    imagePosition: "50% 50%",
     servings: 4,
     ingredientsText: "",
     instructionsText: "",
@@ -66,6 +69,7 @@ export function draftFromRecipe(recipe: Recipe): RecipeDraft {
     title: recipe.title,
     sourceUrl: recipe.sourceUrl ?? "",
     imageUrl: recipe.imageUrl ?? "",
+    imagePosition: recipe.imagePosition ?? "50% 50%",
     servings: recipe.servings,
     ingredientsText: formatIngredientsText(recipe.ingredients),
     instructionsText: recipe.instructions.join("\n"),
@@ -87,6 +91,9 @@ export function recipeFromDraft(draft: RecipeDraft, existing?: Recipe): Recipe {
     title: draft.title.trim() || "Untitled recipe",
     sourceUrl: draft.sourceUrl.trim() || undefined,
     imageUrl: draft.imageUrl.trim() || undefined,
+    imagePosition: draft.imageUrl.trim()
+      ? normalizeImagePosition(draft.imagePosition)
+      : undefined,
     servings: Math.max(1, Number(draft.servings) || 1),
     ingredients: parseIngredientList(draft.ingredientsText.split(/\r?\n/)),
     instructions: draft.instructionsText

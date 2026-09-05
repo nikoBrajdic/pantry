@@ -74,6 +74,23 @@ export const en = {
   "library.kitchen": "Kitchen",
   "library.personal": "Personal",
   "library.switching": "Switching kitchen…",
+  "library.bulk.selected": "{count} selected",
+  "library.bulk.keepers": "Add to keepers",
+  "library.bulk.kitchen": "Add to kitchen",
+  "library.bulk.delete": "Delete",
+  "library.bulk.cancel": "Cancel",
+  "library.bulk.deleteTitle": "Delete selected recipes?",
+  "library.bulk.deleteBlurb":
+    "{count} recipes will be removed from this kitchen. This cannot be undone.",
+  "library.bulk.deleteConfirm": "Delete recipes",
+  "library.bulk.kitchenTitle": "Add to another kitchen",
+  "library.bulk.kitchenBlurb":
+    "Copy {count} selected recipes into the kitchen you pick.",
+  "library.bulk.movedKeepers": "Moved {count} to keepers.",
+  "library.bulk.copiedKitchen": "Copied {count} to {name}.",
+  "library.bulk.copiedKitchenPartial":
+    "Copied {ok} to {name}. {failed} could not be copied.",
+  "library.bulk.copiedKitchenFailed": "Could not copy those recipes.",
 
   "card.keeper": "Keeper",
   "card.wishlist": "Wishlist",
@@ -305,6 +322,8 @@ export const en = {
   "form.source": "Source link (optional)",
   "form.photo": "Photo",
   "form.photoHint": "Pulled from the link when possible. You can replace it with your own.",
+  "form.photoReposition": "Drag the photo to choose how it’s framed.",
+  "form.photoReset": "Reset framing",
   "form.noPhoto": "No photo yet",
   "form.upload": "Upload a photo",
   "form.removePhoto": "Remove photo",
