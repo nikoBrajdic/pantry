@@ -10,9 +10,9 @@ import {
   useState,
 } from "react";
 import { useAuth } from "@/components/session-provider";
-import { mergeRecipes } from "@/lib/storage";
+import { mergeRecipes, newId } from "@/lib/storage";
 import { normalizeRecipe } from "@/lib/normalize";
-import type { KitchenSummary, Recipe, RecipeList } from "@/lib/types";
+import type { CookLog, KitchenSummary, Recipe, RecipeList } from "@/lib/types";
 
 type SyncState = "idle" | "saving" | "ok" | "error";
 
@@ -26,12 +26,14 @@ type LibraryPayload = {
 type RecipeContextValue = {
   ready: boolean;
   recipes: Recipe[];
+  cookLogs: CookLog[];
   household: string;
   kitchens: KitchenSummary[];
   syncState: SyncState;
   upsertRecipe: (recipe: Recipe) => void;
   removeRecipe: (id: string) => void;
   markCooked: (id: string) => number;
+  removeCookLog: (id: string) => void;
   moveToList: (id: string, list: RecipeList) => void;
   createHousehold: () => Promise<string>;
   joinHousehold: (code: string) => Promise<void>;
@@ -52,6 +54,7 @@ function kitchensFromLibrary(library: LibraryPayload): KitchenSummary[] {
 export function RecipeProvider({ children }: { children: React.ReactNode }) {
   const { status } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [cookLogs, setCookLogs] = useState<CookLog[]>([]);
   const [household, setHousehold] = useState("");
   const [kitchens, setKitchens] = useState<KitchenSummary[]>([]);
   const [ready, setReady] = useState(false);
@@ -85,25 +88,36 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (status === "unauthenticated") {
       setReady(false);
+      setCookLogs([]);
       return;
     }
     if (status !== "authenticated") return;
     let cancelled = false;
     void (async () => {
       try {
-        const response = await fetch("/api/recipes");
-        const data = (await response.json()) as {
+        const [recipeResponse, logResponse] = await Promise.all([
+          fetch("/api/recipes"),
+          fetch("/api/cook-logs"),
+        ]);
+        const data = (await recipeResponse.json()) as {
           library?: LibraryPayload;
           error?: string;
         };
+        const logData = (await logResponse.json()) as {
+          logs?: CookLog[];
+          error?: string;
+        };
         if (cancelled) return;
-        if (!response.ok || !data.library) {
-          console.error("Failed to load recipes", data.error ?? response.status);
+        if (!recipeResponse.ok || !data.library) {
+          console.error("Failed to load recipes", data.error ?? recipeResponse.status);
           setReady(true);
           setSyncState("error");
           return;
         }
         applyLibrary(data.library);
+        if (logResponse.ok && Array.isArray(logData.logs)) {
+          setCookLogs(logData.logs);
+        }
         setReady(true);
         setSyncState("ok");
       } catch (error) {
@@ -153,22 +167,76 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     (id: string) => {
       const current = recipesRef.current.find((item) => item.id === id);
       const nextCount = (current?.timesCooked ?? 0) + 1;
+      const cookedAt = new Date().toISOString();
       apply((prev) =>
         prev.map((item) =>
           item.id === id
             ? {
                 ...item,
                 timesCooked: item.timesCooked + 1,
-                lastCookedAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
+                lastCookedAt: cookedAt,
+                updatedAt: cookedAt,
               }
             : item,
         ),
       );
+      if (current) {
+        const tempId = `temp-${newId()}`;
+        const optimistic: CookLog = {
+          id: tempId,
+          recipeId: current.id,
+          recipeTitle: current.title,
+          recipeImageUrl: current.imageUrl,
+          householdCode: householdRef.current,
+          cookedAt,
+        };
+        setCookLogs((prev) => [optimistic, ...prev]);
+        void (async () => {
+          try {
+            const response = await fetch("/api/cook-logs", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                recipeId: current.id,
+                recipeTitle: current.title,
+                recipeImageUrl: current.imageUrl,
+                householdCode: householdRef.current,
+              }),
+            });
+            const data = (await response.json()) as { log?: CookLog };
+            if (!response.ok || !data.log) {
+              setCookLogs((prev) => prev.filter((item) => item.id !== tempId));
+              return;
+            }
+            setCookLogs((prev) =>
+              prev.map((item) => (item.id === tempId ? data.log! : item)),
+            );
+          } catch {
+            setCookLogs((prev) => prev.filter((item) => item.id !== tempId));
+          }
+        })();
+      }
       return nextCount;
     },
     [apply],
   );
+
+  const removeCookLog = useCallback((id: string) => {
+    setCookLogs((prev) => prev.filter((item) => item.id !== id));
+    if (id.startsWith("temp-")) return;
+    void fetch(`/api/cook-logs/${encodeURIComponent(id)}`, { method: "DELETE" }).then(
+      (response) => {
+        if (!response.ok) {
+          void fetch("/api/cook-logs")
+            .then((reload) => reload.json())
+            .then((data: { logs?: CookLog[] }) => {
+              if (Array.isArray(data.logs)) setCookLogs(data.logs);
+            })
+            .catch(() => undefined);
+        }
+      },
+    );
+  }, []);
 
   const moveToList = useCallback(
     (id: string, list: RecipeList) => {
@@ -315,12 +383,14 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     () => ({
       ready: ready && status === "authenticated",
       recipes,
+      cookLogs,
       household,
       kitchens,
       syncState,
       upsertRecipe,
       removeRecipe,
       markCooked,
+      removeCookLog,
       moveToList,
       createHousehold,
       joinHousehold,
@@ -334,12 +404,14 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       ready,
       status,
       recipes,
+      cookLogs,
       household,
       kitchens,
       syncState,
       upsertRecipe,
       removeRecipe,
       markCooked,
+      removeCookLog,
       moveToList,
       createHousehold,
       joinHousehold,

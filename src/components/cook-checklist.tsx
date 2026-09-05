@@ -19,27 +19,29 @@ export function useCookChecklist(recipe: Recipe, onCooked: () => number) {
   );
   const [logged, setLogged] = useState<number | null>(null);
 
-  function maybeFinish(nextIngredients: boolean[], nextSteps: boolean[]) {
-    const hasWork = nextIngredients.length > 0 && nextSteps.length > 0;
-    const done =
-      hasWork && nextIngredients.every(Boolean) && nextSteps.every(Boolean);
+  function maybeFinish(nextSteps: boolean[]) {
+    const done = nextSteps.length > 0 && nextSteps.every(Boolean);
     if (done && logged == null) {
       setLogged(onCooked());
     }
   }
 
+  function logNow() {
+    const count = onCooked();
+    setLogged(count);
+    return count;
+  }
+
   function toggleIngredient(index: number, checked: boolean) {
-    const next = checkedIngredients.map((value, i) =>
-      i === index ? checked : value,
+    setCheckedIngredients((prev) =>
+      prev.map((value, i) => (i === index ? checked : value)),
     );
-    setCheckedIngredients(next);
-    maybeFinish(next, checkedSteps);
   }
 
   function toggleStep(index: number, checked: boolean) {
     const next = checkedSteps.map((value, i) => (i === index ? checked : value));
     setCheckedSteps(next);
-    maybeFinish(checkedIngredients, next);
+    maybeFinish(next);
   }
 
   function reset() {
@@ -55,6 +57,7 @@ export function useCookChecklist(recipe: Recipe, onCooked: () => number) {
     toggleIngredient,
     toggleStep,
     reset,
+    logNow,
   };
 }
 

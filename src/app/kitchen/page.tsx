@@ -72,26 +72,22 @@ export default function KitchenPage() {
               key={match.recipe.id}
               recipe={match.recipe}
               extra={
-                <div className="space-y-1 text-sm">
-                  <p className="font-medium text-primary">
-                    {t("kitchen.match", {
-                      pct: Math.round(match.score * 100),
-                      have: match.matched.length,
-                      total: match.recipe.ingredients.length,
-                    })}
-                  </p>
-                  {match.missing.length > 0 ? (
-                    <p className="text-muted-foreground">
-                      {t("kitchen.missing", {
-                        list:
-                          match.missing.slice(0, 4).join(", ") +
-                          (match.missing.length > 4 ? "…" : ""),
-                      })}
-                    </p>
-                  ) : (
-                    <p className="text-muted-foreground">{t("kitchen.haveAll")}</p>
-                  )}
-                </div>
+                <p className="text-sm font-medium text-primary">
+                  {t("kitchen.match", {
+                    place: t(
+                      match.field === "tags"
+                        ? "kitchen.place.tags"
+                        : match.field === "title"
+                          ? "kitchen.place.title"
+                          : "kitchen.place.body",
+                    ),
+                    kind: t(
+                      match.kind === "exact"
+                        ? "kitchen.kind.exact"
+                        : "kitchen.kind.partial",
+                    ),
+                  })}
+                </p>
               }
             />
           ))}

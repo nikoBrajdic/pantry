@@ -6,6 +6,7 @@ export const hr: Record<MessageKey, string> = {
   "nav.pantry": "Špajza",
   "nav.pantryLong": "Pretraži špajzu",
   "nav.share": "Dijeli",
+  "nav.history": "Povijest",
   "nav.signOut": "Odjava",
   "nav.tagline": "Zalijepi link. Spremi recept. Skuhaj opet.",
 
@@ -39,6 +40,7 @@ export const hr: Record<MessageKey, string> = {
 
   "loading.shelf": "Otvaram tvoju policu",
   "loading.recipe": "Učitavam recept",
+  "loading.history": "Otvaram povijest kuhanja",
 
   "login.title": "Pantry",
   "login.blurb":
@@ -142,17 +144,36 @@ export const hr: Record<MessageKey, string> = {
   "kitchen.eyebrow": "Na polici",
   "kitchen.title": "Pretraži špajzu",
   "kitchen.blurb":
-    "Upiši što imaš u kući — piletina, jaja, brašno, rajčice… Aplikacija rangira spremljene recepte po tome koliko odgovaraju.",
+    "Upiši riječ ili dvije. Prvo idu pogoci u oznakama, zatim u naslovu, zatim u ostatku recepta. Cijele riječi su iznad djelomičnih.",
   "kitchen.label": "Sastojci koje imaš",
   "kitchen.placeholder": "piletina, paprika, jaja, brašno, mlijeko",
   "kitchen.search": "Pretraži špajzu",
   "kitchen.example": "Primjer: piletina, paprika, luk, jaja, brašno",
   "kitchen.empty.title": "Nijedan spremljeni recept baš ne odgovara",
   "kitchen.empty.blurb":
-    "Dodaj više recepata ili proširi popis. Pretražuje se samo ono što je već u knjižnici.",
-  "kitchen.match": "{pct}% podudaranje · imaš {have} od {total}",
+    "Nijedan recept u knjižnici ne odgovara svim tim riječima. Probaj manje riječi ili dodaj recept.",
+  "kitchen.match": "{place} · {kind}",
+  "kitchen.place.tags": "Oznake",
+  "kitchen.place.title": "Naslov",
+  "kitchen.place.body": "Recept",
+  "kitchen.kind.exact": "točno podudaranje",
+  "kitchen.kind.partial": "djelomično podudaranje",
   "kitchen.missing": "Nedostaje: {list}",
   "kitchen.haveAll": "Imaš sve.",
+
+  "history.eyebrow": "Tvoja kuhanja",
+  "history.title": "Povijest kuhanja",
+  "history.blurb":
+    "Svaki put kad skuhaš recept, završi ovdje s datumom — samo tvoje, čak i u dijeljenoj kuhinji.",
+  "history.today": "Danas",
+  "history.yesterday": "Jučer",
+  "history.personalKitchen": "Osobna kuhinja",
+  "history.opening": "Otvaram…",
+  "history.remove": "Ukloni ovo kuhanje",
+  "history.empty.title": "Još nema zabilježenih kuhanja",
+  "history.empty.blurb":
+    "Dovrši popis na receptu ili dodirni Zabilježi kuhanje — taj datum pojavi se ovdje.",
+  "history.empty.cta": "Idi u knjižnicu",
 
   "share.eyebrow": "Dijeljene kuhinje",
   "share.title": "Kuhaj sa sous chefovima",
@@ -203,6 +224,8 @@ export const hr: Record<MessageKey, string> = {
   "recipe.cookedOnce": "Skuhano {count} put",
   "recipe.cookedMany": "Skuhano {count} puta",
   "recipe.notCooked": "Još nije skuhano",
+  "recipe.lastCooked": "Zadnje skuhano {date}",
+  "recipe.logCook": "Zabilježi kuhanje",
   "recipe.tweaked": "Prilagođeno",
   "recipe.tweakedHint":
     "Prilagodio/la si ovaj recept — pogledaj „Što sam promijenio/la” za bilješke.",
@@ -248,9 +271,10 @@ export const hr: Record<MessageKey, string> = {
   "cook.noSteps": "Još nema spremljenih koraka.",
   "cook.done": "Skuhano. To je bilo kuhanje #{count}.",
   "cook.doneHint":
-    "Sada se pojavljuje u kuhinjskim hitovima. Resetiraj popise kad kuhaš opet.",
+    "Sada se pojavljuje u kuhinjskim hitovima i u povijesti kuhanja. Resetiraj popise kad kuhaš opet.",
   "cook.again": "Kuhaj opet",
-  "cook.hint": "Označi svaki sastojak i svaki korak da zabilježiš kuhanje.",
+  "cook.hint":
+    "Označi svaki korak postupka da zabilježiš kuhanje, ili dodirni Zabilježi kuhanje.",
 
   "units.asWritten": "Kao što piše",
   "units.imperial": "Imperijalni",

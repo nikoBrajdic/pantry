@@ -6,6 +6,7 @@ import {
   HouseIcon,
   MagnifyingGlassIcon,
   PlusCircleIcon,
+  ClockCounterClockwiseIcon,
   SignOutIcon,
   UsersThreeIcon,
 } from "@phosphor-icons/react";
@@ -30,9 +31,15 @@ const LINKS: {
   { href: "/add", labelKey: "nav.add", shortKey: "nav.add", icon: PlusCircleIcon },
   {
     href: "/kitchen",
-    labelKey: "nav.pantryLong",
+    labelKey: "nav.pantry",
     shortKey: "nav.pantry",
     icon: MagnifyingGlassIcon,
+  },
+  {
+    href: "/history",
+    labelKey: "nav.history",
+    shortKey: "nav.history",
+    icon: ClockCounterClockwiseIcon,
   },
   { href: "/share", labelKey: "nav.share", shortKey: "nav.share", icon: UsersThreeIcon },
 ];
@@ -75,7 +82,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
           <nav className="hidden items-center gap-1 md:flex">
             {LINKS.map((link) => {
-              const active = pathname === link.href;
+              const active =
+                link.href === "/"
+                  ? pathname === "/"
+                  : pathname === link.href || pathname.startsWith(`${link.href}/`);
               const Icon = link.icon;
               return (
                 <Link
@@ -135,9 +145,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-[color-mix(in_oklch,var(--background)_90%,var(--card))] px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md md:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-4">
+        <div className="mx-auto grid max-w-lg grid-cols-5">
           {LINKS.map((link) => {
-            const active = pathname === link.href;
+            const active =
+              link.href === "/"
+                ? pathname === "/"
+                : pathname === link.href || pathname.startsWith(`${link.href}/`);
             const Icon = link.icon;
             return (
               <Link

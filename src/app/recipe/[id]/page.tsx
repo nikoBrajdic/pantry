@@ -46,6 +46,7 @@ import {
   tagMessageKey,
 } from "@/lib/i18n";
 import { shareUrlFor } from "@/lib/share";
+import { formatCookShortDate } from "@/lib/cook-dates";
 import type { UnitSystem } from "@/lib/units";
 import { cn } from "@/lib/utils";
 
@@ -133,8 +134,8 @@ function RecipeBody({
   onMove: (list: "keeper" | "wishlist") => void;
   onSaveNote: (notes: string) => void;
 }) {
-  const { t } = useLocale();
-  const { household, kitchens, copyRecipeToKitchen } = useRecipes();
+  const { t, locale } = useLocale();
+  const { household, kitchens, copyRecipeToKitchen, cookLogs } = useRecipes();
   const [unitSystem, setUnitSystem] = useState<UnitSystem>("original");
   const scale = useRecipeScale(recipe, unitSystem);
   const cook = useCookChecklist(recipe, onCooked);
@@ -149,6 +150,8 @@ function RecipeBody({
   const [kitchenMessage, setKitchenMessage] = useState("");
   const [cooking, setCooking] = useState(false);
   const isDesktop = useSyncExternalStore(subscribeLg, getLgSnapshot, getLgServerSnapshot);
+  const lastCookedAt =
+    cookLogs.find((log) => log.recipeId === recipe.id)?.cookedAt ?? recipe.lastCookedAt;
 
   const kitchenTargets = [
     ...(household
@@ -219,6 +222,11 @@ function RecipeBody({
               ) : null}
             </div>
             <h1 className="font-heading text-4xl font-bold tracking-tight">{recipe.title}</h1>
+            {lastCookedAt ? (
+              <p className="text-muted-foreground mt-2 text-sm">
+                {t("recipe.lastCooked", { date: formatCookShortDate(lastCookedAt, locale) })}
+              </p>
+            ) : null}
             {recipe.notes?.trim() ? (
               <a
                 href="#what-i-changed"
@@ -262,6 +270,14 @@ function RecipeBody({
             </a>
           ) : null}
           <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={() => cook.logNow()}
+            >
+              <FireIcon />
+              {t("recipe.logCook")}
+            </Button>
             <Button
               variant="outline"
               className="rounded-full"

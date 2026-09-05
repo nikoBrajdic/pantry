@@ -68,6 +68,15 @@ export type KitchenSummary = {
   name: string;
 };
 
+export type CookLog = {
+  id: string;
+  recipeId: string;
+  recipeTitle: string;
+  recipeImageUrl?: string;
+  householdCode: string;
+  cookedAt: string;
+};
+
 export type UserLibrary = {
   email: string;
   householdCode: string;

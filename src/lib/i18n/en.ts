@@ -4,6 +4,7 @@ export const en = {
   "nav.pantry": "Pantry",
   "nav.pantryLong": "Search the pantry",
   "nav.share": "Share",
+  "nav.history": "History",
   "nav.signOut": "Sign out",
   "nav.tagline": "Paste a link. Keep the recipe. Cook it again.",
 
@@ -37,6 +38,7 @@ export const en = {
 
   "loading.shelf": "Opening your shelf",
   "loading.recipe": "Loading recipe",
+  "loading.history": "Opening your cooking history",
 
   "login.title": "Pantry",
   "login.blurb":
@@ -140,17 +142,36 @@ export const en = {
   "kitchen.eyebrow": "On your shelf",
   "kitchen.title": "Search the pantry",
   "kitchen.blurb":
-    "Type what is in the house — chicken, eggs, flour, tomatoes… The app ranks saved recipes by how well they fit.",
+    "Type a word or two. Tag matches come first, then the title, then the rest of the recipe. Full words rank above partial matches.",
   "kitchen.label": "Ingredients you have",
   "kitchen.placeholder": "chicken, peppers, eggs, flour, milk",
   "kitchen.search": "Search the pantry",
   "kitchen.example": "Example: chicken, peppers, onion, eggs, flour",
   "kitchen.empty.title": "No saved recipe quite fits",
   "kitchen.empty.blurb":
-    "Add more recipes or widen the list. This only searches what is already in your library.",
-  "kitchen.match": "{pct}% match · you have {have} of {total}",
+    "Nothing in your library matches all of those words. Try fewer words, or add a recipe.",
+  "kitchen.match": "{place} · {kind}",
+  "kitchen.place.tags": "Tags",
+  "kitchen.place.title": "Title",
+  "kitchen.place.body": "Recipe",
+  "kitchen.kind.exact": "full match",
+  "kitchen.kind.partial": "partial match",
   "kitchen.missing": "Missing: {list}",
   "kitchen.haveAll": "You have everything.",
+
+  "history.eyebrow": "Your cooks",
+  "history.title": "Cooking history",
+  "history.blurb":
+    "Every time you cook a recipe, it lands here with the date — yours alone, even in a shared kitchen.",
+  "history.today": "Today",
+  "history.yesterday": "Yesterday",
+  "history.personalKitchen": "Personal kitchen",
+  "history.opening": "Opening…",
+  "history.remove": "Remove this cook",
+  "history.empty.title": "No cooks logged yet",
+  "history.empty.blurb":
+    "Finish a recipe’s checklist, or tap Log cook on a recipe, and that date shows up here.",
+  "history.empty.cta": "Go to the library",
 
   "share.eyebrow": "Shared kitchens",
   "share.title": "Cook with your sous chefs",
@@ -199,6 +220,8 @@ export const en = {
   "recipe.cookedOnce": "Cooked {count} time",
   "recipe.cookedMany": "Cooked {count} times",
   "recipe.notCooked": "Not cooked yet",
+  "recipe.lastCooked": "Last cooked {date}",
+  "recipe.logCook": "Log cook",
   "recipe.tweaked": "Tweaked",
   "recipe.tweakedHint":
     "You tweaked this recipe — see “What I changed” for your notes.",
@@ -242,9 +265,11 @@ export const en = {
   "cook.method": "Method",
   "cook.noSteps": "No steps saved yet.",
   "cook.done": "Cooked. That was time #{count}.",
-  "cook.doneHint": "It now shows up in Kitchen hits. Reset the lists when you make it again.",
+  "cook.doneHint":
+    "It now shows up in Kitchen hits and in your cooking history. Reset the lists when you make it again.",
   "cook.again": "Cook again",
-  "cook.hint": "Check every ingredient and every step to log a cook.",
+  "cook.hint":
+    "Check every method step to log a cook, or tap Log cook to record it now.",
 
   "units.asWritten": "As written",
   "units.imperial": "Imperial",

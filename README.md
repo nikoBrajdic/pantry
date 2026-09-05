@@ -8,7 +8,8 @@ A recipe library for two. Paste a link, pull the photo, ingredients, servings, a
 - **Add from a link** — the photo comes with the page. Replace it with a photo you upload.
 - **Keepers and wishlist** — split “we make this” from “we want to try this”.
 - **Notes** — write what you changed from the original.
-- **Checklists** — tick ingredients and steps. When everything is checked, that counts as a cook.
+- **Checklists** — tick ingredients and steps. When everything is checked, that counts as a cook. You can also tap **Log cook**.
+- **Cooking history** — a personal list of what you cooked and when. Open it from History in the nav.
 - **Kitchen hits** — recipes ranked by how many times you cooked them.
 - **Search the pantry** — type what is in the fridge and find the best saved match.
 
@@ -46,6 +47,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 - `supabase/migrations/20260330170000_recipes_table.sql`
 - `supabase/migrations/20260330180000_tags.sql`
 - `supabase/migrations/20260330190000_tag_last_used.sql`
+- `supabase/migrations/20260330200000_cook_logs.sql`
 
 ### 2. Google login (via Supabase Auth)
 
