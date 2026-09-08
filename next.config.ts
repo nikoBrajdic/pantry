@@ -9,6 +9,20 @@ const nextConfig: NextConfig = {
       { source: "/uvezak", destination: "/import", permanent: false },
     ];
   },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          // Allow Screen Wake Lock for “I'm cooking” (some hosts/policies omit it).
+          {
+            key: "Permissions-Policy",
+            value: "screen-wake-lock=(self)",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

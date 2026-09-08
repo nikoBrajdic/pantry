@@ -280,6 +280,11 @@ export const hr: Record<MessageKey, string> = {
   "cooking.title": "Kuham",
   "cooking.on": "Zaslon ostaje budan dok kuhaš",
   "cooking.off": "Drži zaslon uključen — bez zaključavanja i spavanja",
+  "cooking.paused": "Pauzirano u pozadini — nastavlja kad se vratiš",
+  "cooking.denied":
+    "Zaslon se nije mogao držati budnim. Isključi štednju baterije ili dozvoli budnost zaslona u postavkama preglednika.",
+  "cooking.unsupported": "Ovaj preglednik ne može držati zaslon budnim.",
+  "cooking.insecure": "Treba HTTPS da zaslon ostane budan.",
   "cooking.aria": "Kuham — drži zaslon budnim",
 
   "cook.ingredients": "Sastojci",

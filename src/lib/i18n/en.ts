@@ -275,6 +275,11 @@ export const en = {
   "cooking.title": "I'm cooking",
   "cooking.on": "Screen stays awake while you cook",
   "cooking.off": "Keep the screen on — no lock or sleep",
+  "cooking.paused": "Paused in the background — turns back on when you return",
+  "cooking.denied":
+    "Couldn't keep the screen on. Turn off battery saver, or allow screen wake in browser site settings.",
+  "cooking.unsupported": "This browser can't keep the screen awake.",
+  "cooking.insecure": "Needs HTTPS to keep the screen awake.",
   "cooking.aria": "I'm cooking — keep screen awake",
 
   "cook.ingredients": "Ingredients",
